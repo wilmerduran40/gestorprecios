@@ -168,14 +168,18 @@
 
         .cotizacion-actions {
             display: flex;
-            gap: 10px;
+            gap: 20px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .payment-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
         }
 
         .resultados-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
             margin-top: 20px;
         }
 
@@ -184,6 +188,7 @@
             padding: 15px;
             border-radius: 5px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
         }
 
         .resultado-item h3 {
@@ -194,13 +199,17 @@
 
         .resultado-item p {
             margin: 5px 0 0;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: bold;
             color: var(--text-color);
         }
         
         .resultado-item p.total-bs {
             color: var(--success-color);
+        }
+
+        #printable-receipt {
+            display: none;
         }
 
         /* --- ESTILOS PARA MÓVILES --- */
@@ -268,36 +277,43 @@
             body {
                 background-color: var(--white);
                 padding: 0;
+                margin: 0;
+            }
+            .non-printable {
+                display: none !important;
+            }
+            #printable-receipt {
+                display: block;
+                font-family: 'sans-serif';
                 font-size: 12pt;
+                color: #000;
+                padding: 20mm;
             }
-            .container {
-                box-shadow: none;
-                border: none;
+            #printable-receipt h1 {
+                color: #000;
+                text-align: center;
+                font-size: 22pt;
+            }
+            #printable-receipt table {
                 width: 100%;
-                max-width: 100%;
-                padding: 5px;
+                border-collapse: collapse;
+                margin-top: 25px;
             }
-            h1 {
-                font-size: 20pt;
+            #printable-receipt th, #printable-receipt td {
+                border: 1px solid #888;
+                padding: 10px;
+                text-align: left;
             }
-            h2 {
-                font-size: 16pt;
+            #printable-receipt th {
+                background-color: #eee;
             }
-            .tasas-container, .producto-form, .cotizacion-actions, .btn-danger {
-                display: none;
+            #printable-receipt .total-row td {
+                font-weight: bold;
+                font-size: 14pt;
+                border-top: 2px solid #000;
             }
-            .tabla-precios th, .tabla-precios td {
-                border: 1px solid #ccc;
-            }
-            .tabla-precios {
-                margin-top: 10px;
-            }
-            .resultados-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .resultado-item {
-                border: 1px solid #ccc;
-                box-shadow: none;
+            #printable-receipt .text-right {
+                text-align: right;
             }
         }
 
@@ -305,7 +321,7 @@
 </head>
 <body>
 
-    <div class="container">
+    <div class="container non-printable">
         <h1>Gestor de Precios y Cotizaciones</h1>
 
         <h2>Tasas de Referencia</h2>
@@ -367,14 +383,21 @@
         <div class="cotizacion-container">
             <h2>Cotización</h2>
             <div class="cotizacion-actions">
-                <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Totales</button>
-                <button id="btn-imprimir" class="btn btn-info">Imprimir Cotización</button>
+                <div class="payment-options">
+                    <strong>Pagar con:</strong>
+                    <label><input type="radio" name="payment-method" value="USD" checked> USD/USDT</label>
+                    <label><input type="radio" name="payment-method" value="VES"> Bolívares</label>
+                </div>
+                <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Total</button>
+                <button id="btn-imprimir" class="btn btn-info">Imprimir Recibo</button>
             </div>
             <div id="cotizacion-resultados" class="resultados-grid">
                 <!-- Los resultados se mostrarán aquí -->
             </div>
         </div>
     </div>
+
+    <div id="printable-receipt"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -394,6 +417,7 @@
             const btnCalcularCotizacion = document.getElementById('btn-calcular-cotizacion');
             const btnImprimir = document.getElementById('btn-imprimir');
             const cotizacionResultados = document.getElementById('cotizacion-resultados');
+            const printableReceipt = document.getElementById('printable-receipt');
 
             // --- ALMACÉN DE DATOS ---
             let productos = [];
@@ -444,6 +468,7 @@
                     if (!isNaN(tasaBcv)) precioBcv = costo * tasaBcv;
                     if (!isNaN(tasaBinance)) precioBinance = costo * tasaBinance;
                     if (!isNaN(tasaUsdEur)) costoEnEur = costo * tasaUsdEur;
+                    if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
                 } else if (moneda === 'EUR') {
                     if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
                 }
@@ -472,29 +497,83 @@
                     return;
                 }
 
+                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
                 let totalUSD = 0, totalBsBinance = 0;
 
                 productos.forEach(p => {
                     if (p.moneda === 'USD') {
                         totalUSD += p.costo;
                     }
-                    // Podríamos sumar los euros convertidos a USD si hubiera una tasa EUR->USD
-
                     if (p.precioBinance !== null && !isNaN(p.precioBinance)) {
                         totalBsBinance += p.precioBinance;
                     }
                 });
 
-                cotizacionResultados.innerHTML = `
-                    <div class="resultado-item">
-                        <h3>Total (pago en Dólares)</h3>
-                        <p>${formatDollar(totalUSD)}</p>
-                    </div>
-                    <div class="resultado-item">
-                        <h3>Total (pago en Bolívares)</h3>
-                        <p class="total-bs">${formatBs(totalBsBinance)}</p>
-                    </div>
+                let resultHTML = '';
+                if (paymentMethod === 'USD') {
+                    resultHTML = `
+                        <div class="resultado-item">
+                            <h3>Total a Pagar (USD/USDT)</h3>
+                            <p>${formatDollar(totalUSD)}</p>
+                        </div>`;
+                } else { // VES
+                    resultHTML = `
+                        <div class="resultado-item">
+                            <h3>Total a Pagar (Bolívares)</h3>
+                            <p class="total-bs">${formatBs(totalBsBinance)}</p>
+                        </div>`;
+                }
+                cotizacionResultados.innerHTML = resultHTML;
+            };
+
+            const generarRecibo = () => {
+                if (productos.length === 0) {
+                    alert('No hay productos para generar un recibo.');
+                    return false;
+                }
+
+                let totalReciboBs = 0;
+                let tableRows = '';
+
+                productos.forEach(p => {
+                    const precioBsBinance = p.precioBinance;
+                    if (precioBsBinance !== null && !isNaN(precioBsBinance)) {
+                        totalReciboBs += precioBsBinance;
+                        tableRows += `
+                            <tr>
+                                <td>${p.nombre}</td>
+                                <td class="text-right">${formatBs(precioBsBinance)}</td>
+                            </tr>
+                        `;
+                    } else {
+                         tableRows += `
+                            <tr>
+                                <td>${p.nombre}</td>
+                                <td class="text-right">N/A</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                printableReceipt.innerHTML = `
+                    <h1>Recibo de Cotización</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-right">Precio (Bs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                            <tr class="total-row">
+                                <td><strong>Total a Pagar</strong></td>
+                                <td class="text-right"><strong>${formatBs(totalReciboBs)}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 `;
+                return true;
             };
 
             // --- FUNCIÓN DE RENDERIZADO ---
@@ -517,7 +596,11 @@
             // --- ASIGNAR EVENTOS ---
             btnAgregar.addEventListener('click', agregarProducto);
             btnCalcularCotizacion.addEventListener('click', calcularCotizacion);
-            btnImprimir.addEventListener('click', () => window.print());
+            btnImprimir.addEventListener('click', () => {
+                if (generarRecibo()) {
+                    window.print();
+                }
+            });
 
             tablaBody.addEventListener('click', (e) => {
                 if (e.target.classList.contains('btn-eliminar')) {
