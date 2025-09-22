@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Precios de Importación</title>
+    <title>Gestor de Precios y Cotizaciones</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -13,6 +13,7 @@
             --white: #fff;
             --danger-color: #dc3545;
             --danger-hover: #c82333;
+            --success-color: #28a745;
         }
 
         body {
@@ -143,12 +144,111 @@
             font-style: italic;
         }
 
+        .cotizacion-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .resultados-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .resultado-item {
+            background-color: var(--white);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .resultado-item h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .resultado-item p {
+            margin: 5px 0 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        
+        .resultado-item p.total-bs {
+            color: var(--success-color);
+        }
+
+        /* --- ESTILOS PARA MÓVILES --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .producto-form {
+                grid-template-columns: 1fr; /* Apila los campos del formulario */
+            }
+
+            .tabla-precios thead {
+                display: none; /* Oculta la cabecera de la tabla */
+            }
+
+            .tabla-precios, .tabla-precios tbody, .tabla-precios tr, .tabla-precios td {
+                display: block;
+                width: 100%;
+            }
+
+            .tabla-precios tr {
+                margin-bottom: 15px;
+                border: 1px solid var(--border-color);
+                border-radius: 5px;
+                padding: 10px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+
+            .tabla-precios td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 5px;
+                border: none;
+                border-bottom: 1px solid #f0f0f0;
+                text-align: right !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+                font-weight: normal;
+            }
+            
+            .tabla-precios td:last-child {
+                border-bottom: none;
+                justify-content: center;
+                padding-top: 10px;
+            }
+
+            .tabla-precios td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--primary-color);
+                text-align: left;
+                margin-right: 10px;
+            }
+            
+            .na {
+                text-align: right !important;
+            }
+        }
+
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Gestor de Precios de Importación</h1>
+        <h1>Gestor de Precios y Cotizaciones</h1>
 
         <h2>Tasas de Referencia</h2>
         <div class="tasas-container">
@@ -201,6 +301,14 @@
                 <!-- Las filas de productos se añadirán aquí -->
             </tbody>
         </table>
+        
+        <div class="cotizacion-container">
+            <h2>Cotización</h2>
+            <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Totales</button>
+            <div id="cotizacion-resultados" class="resultados-grid">
+                <!-- Los resultados se mostrarán aquí -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -217,20 +325,30 @@
             const btnAgregar = document.getElementById('btn-agregar');
             const tablaBody = document.getElementById('tabla-body');
 
-            // --- FUNCIÓN PARA FORMATEAR NÚMEROS COMO MONEDA ---
-            const formatCurrency = (value) => {
+            const btnCalcularCotizacion = document.getElementById('btn-calcular-cotizacion');
+            const cotizacionResultados = document.getElementById('cotizacion-resultados');
+
+            // --- ALMACÉN DE DATOS ---
+            let productos = [];
+
+            // --- FUNCIONES DE FORMATO ---
+            const formatBs = (value) => {
                 if (isNaN(value) || value === null) return '<span class="na">N/A</span>';
                 return `Bs. ${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             };
+
+            const formatDollar = (value) => {
+                 if (isNaN(value) || value === null) return 'N/A';
+                return `$ ${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
             
             const formatOriginalCost = (cost, currency) => {
                 const symbol = currency === 'USD' ? '$' : '€';
                 return `${symbol} ${cost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             };
 
-            // --- FUNCIÓN PRINCIPAL PARA AÑADIR PRODUCTO ---
+            // --- FUNCIONES PRINCIPALES ---
             const agregarProducto = () => {
-                // 1. Obtener valores de los inputs
                 const tasaBcv = parseFloat(tasaBcvInput.value);
                 const tasaBinance = parseFloat(tasaBinanceInput.value);
                 const tasaEuro = parseFloat(tasaEuroInput.value);
@@ -239,13 +357,11 @@
                 const costo = parseFloat(productoCostoInput.value);
                 const moneda = productoMonedaSelect.value;
 
-                // 2. Validar inputs
                 if (!nombre || isNaN(costo) || costo <= 0) {
                     alert('Por favor, introduce un nombre y un costo válido para el producto.');
                     return;
                 }
 
-                // 3. Calcular precios
                 let precioBcv = null;
                 let precioBinance = null;
                 let precioEuro = null;
@@ -257,34 +373,86 @@
                     if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
                 }
 
-                // 4. Crear la nueva fila en la tabla
-                const newRow = document.createElement('tr');
+                const producto = {
+                    id: Date.now(),
+                    nombre,
+                    costo,
+                    moneda,
+                    precioBcv,
+                    precioBinance,
+                    precioEuro
+                };
+                productos.push(producto);
                 
-                newRow.innerHTML = `
-                    <td>${nombre}</td>
-                    <td>${formatOriginalCost(costo, moneda)}</td>
-                    <td>${formatCurrency(precioBcv)}</td>
-                    <td>${formatCurrency(precioBinance)}</td>
-                    <td>${formatCurrency(precioEuro)}</td>
-                    <td><button class="btn btn-danger btn-eliminar">Eliminar</button></td>
-                `;
-
-                // 5. Añadir evento al botón de eliminar
-                newRow.querySelector('.btn-eliminar').addEventListener('click', () => {
-                    newRow.remove();
-                });
-
-                // 6. Añadir la fila a la tabla y limpiar el formulario
-                tablaBody.appendChild(newRow);
+                renderTabla();
                 productoNombreInput.value = '';
                 productoCostoInput.value = '';
                 productoNombreInput.focus();
             };
 
+            const eliminarProducto = (id) => {
+                productos = productos.filter(p => p.id !== id);
+                renderTabla();
+            };
+
+            const calcularCotizacion = () => {
+                if (productos.length === 0) {
+                    alert('No hay productos en la lista para cotizar.');
+                    return;
+                }
+
+                let totalUSD = 0;
+                let totalBsBinance = 0;
+
+                productos.forEach(p => {
+                    if (p.moneda === 'USD') {
+                        totalUSD += p.costo;
+                    }
+                    if (p.precioBinance !== null && !isNaN(p.precioBinance)) {
+                        totalBsBinance += p.precioBinance;
+                    }
+                });
+
+                cotizacionResultados.innerHTML = `
+                    <div class="resultado-item">
+                        <h3>Total (pago en Dólares)</h3>
+                        <p>${formatDollar(totalUSD)}</p>
+                    </div>
+                    <div class="resultado-item">
+                        <h3>Total (pago en Bolívares)</h3>
+                        <p class="total-bs">${formatBs(totalBsBinance)}</p>
+                    </div>
+                `;
+            };
+
+            // --- FUNCIÓN DE RENDERIZADO ---
+            const renderTabla = () => {
+                tablaBody.innerHTML = '';
+                productos.forEach(p => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td data-label="Producto">${p.nombre}</td>
+                        <td data-label="Costo Original">${formatOriginalCost(p.costo, p.moneda)}</td>
+                        <td data-label="Precio en Bs (Tasa BCV)">${formatBs(p.precioBcv)}</td>
+                        <td data-label="Precio en Bs (Tasa Binance)">${formatBs(p.precioBinance)}</td>
+                        <td data-label="Precio en Bs (Tasa Euro)">${formatBs(p.precioEuro)}</td>
+                        <td data-label="Acción"><button class="btn btn-danger btn-eliminar" data-id="${p.id}">Eliminar</button></td>
+                    `;
+                    tablaBody.appendChild(newRow);
+                });
+            };
+
             // --- ASIGNAR EVENTOS ---
             btnAgregar.addEventListener('click', agregarProducto);
+            btnCalcularCotizacion.addEventListener('click', calcularCotizacion);
+
+            tablaBody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-eliminar')) {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    eliminarProducto(id);
+                }
+            });
             
-            // Opcional: Permitir añadir con la tecla Enter en el último campo
             productoCostoInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     agregarProducto();
