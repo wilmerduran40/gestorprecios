@@ -289,6 +289,12 @@
                 color: #000;
                 padding: 20mm;
             }
+            #printable-receipt .logo {
+                display: block;
+                margin: 0 auto 25px;
+                max-width: 180px;
+                max-height: 100px;
+            }
             #printable-receipt h1 {
                 color: #000;
                 text-align: center;
@@ -468,7 +474,7 @@
                     if (!isNaN(tasaBcv)) precioBcv = costo * tasaBcv;
                     if (!isNaN(tasaBinance)) precioBinance = costo * tasaBinance;
                     if (!isNaN(tasaUsdEur)) costoEnEur = costo * tasaUsdEur;
-                    if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
+                    if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro; // Calcular también la tasa Euro para USD
                 } else if (moneda === 'EUR') {
                     if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
                 }
@@ -532,43 +538,76 @@
                     return false;
                 }
 
-                let totalReciboBs = 0;
+                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
                 let tableRows = '';
+                let totalHTML = '';
+                let headerHTML = '';
 
-                productos.forEach(p => {
-                    const precioBsBinance = p.precioBinance;
-                    if (precioBsBinance !== null && !isNaN(precioBsBinance)) {
-                        totalReciboBs += precioBsBinance;
-                        tableRows += `
-                            <tr>
-                                <td>${p.nombre}</td>
-                                <td class="text-right">${formatBs(precioBsBinance)}</td>
-                            </tr>
-                        `;
-                    } else {
-                         tableRows += `
-                            <tr>
-                                <td>${p.nombre}</td>
-                                <td class="text-right">N/A</td>
-                            </tr>
-                        `;
-                    }
-                });
+                if (paymentMethod === 'USD') {
+                    headerHTML = 'Precio (USD)';
+                    let totalReciboUsd = 0;
+
+                    productos.forEach(p => {
+                        if (p.moneda === 'USD') {
+                            totalReciboUsd += p.costo;
+                            tableRows += `
+                                <tr>
+                                    <td>${p.nombre}</td>
+                                    <td class="text-right">${formatDollar(p.costo)}</td>
+                                </tr>
+                            `;
+                        } else {
+                            tableRows += `
+                                <tr>
+                                    <td>${p.nombre}</td>
+                                    <td class="text-right">N/A (Costo en EUR)</td>
+                                </tr>
+                            `;
+                        }
+                    });
+                    totalHTML = `<strong>${formatDollar(totalReciboUsd)}</strong>`;
+
+                } else { // VES
+                    headerHTML = 'Precio (Bs.)';
+                    let totalReciboBs = 0;
+
+                    productos.forEach(p => {
+                        const precioBsBinance = p.precioBinance;
+                        if (precioBsBinance !== null && !isNaN(precioBsBinance)) {
+                            totalReciboBs += precioBsBinance;
+                            tableRows += `
+                                <tr>
+                                    <td>${p.nombre}</td>
+                                    <td class="text-right">${formatBs(precioBsBinance)}</td>
+                                </tr>
+                            `;
+                        } else {
+                            tableRows += `
+                                <tr>
+                                    <td>${p.nombre}</td>
+                                    <td class="text-right">N/A</td>
+                                </tr>
+                            `;
+                        }
+                    });
+                    totalHTML = `<strong>${formatBs(totalReciboBs)}</strong>`;
+                }
 
                 printableReceipt.innerHTML = `
+                    <img src="imagenes/logo.png" alt="Logo" class="logo">
                     <h1>Recibo de Cotización</h1>
                     <table>
                         <thead>
                             <tr>
                                 <th>Producto</th>
-                                <th class="text-right">Precio (Bs.)</th>
+                                <th class="text-right">${headerHTML}</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${tableRows}
                             <tr class="total-row">
                                 <td><strong>Total a Pagar</strong></td>
-                                <td class="text-right"><strong>${formatBs(totalReciboBs)}</strong></td>
+                                <td class="text-right">${totalHTML}</td>
                             </tr>
                         </tbody>
                     </table>
