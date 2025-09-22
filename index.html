@@ -14,6 +14,7 @@
             --danger-color: #dc3545;
             --danger-hover: #c82333;
             --success-color: #28a745;
+            --info-color: #17a2b8;
         }
 
         body {
@@ -88,7 +89,7 @@
             font-size: 1rem;
             font-weight: 600;
             transition: background-color 0.2s ease-in-out;
-            align-self: end; /* Alinea el botón al final en el grid */
+            align-self: end;
         }
 
         .btn-primary {
@@ -98,6 +99,14 @@
 
         .btn-primary:hover {
             background-color: #004494;
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: var(--white);
+        }
+        .btn-info:hover {
+            background-color: #138496;
         }
         
         .btn-danger {
@@ -137,6 +146,11 @@
             font-family: "Courier New", Courier, monospace;
             font-weight: bold;
         }
+
+        .costo-original-eur {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
         
         .na {
             color: #999;
@@ -150,6 +164,12 @@
             background-color: var(--secondary-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
+        }
+
+        .cotizacion-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .resultados-grid {
@@ -192,11 +212,11 @@
                 padding: 15px;
             }
             .producto-form {
-                grid-template-columns: 1fr; /* Apila los campos del formulario */
+                grid-template-columns: 1fr;
             }
 
             .tabla-precios thead {
-                display: none; /* Oculta la cabecera de la tabla */
+                display: none;
             }
 
             .tabla-precios, .tabla-precios tbody, .tabla-precios tr, .tabla-precios td {
@@ -243,6 +263,44 @@
             }
         }
 
+        /* --- ESTILOS PARA IMPRESIÓN --- */
+        @media print {
+            body {
+                background-color: var(--white);
+                padding: 0;
+                font-size: 12pt;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                width: 100%;
+                max-width: 100%;
+                padding: 5px;
+            }
+            h1 {
+                font-size: 20pt;
+            }
+            h2 {
+                font-size: 16pt;
+            }
+            .tasas-container, .producto-form, .cotizacion-actions, .btn-danger {
+                display: none;
+            }
+            .tabla-precios th, .tabla-precios td {
+                border: 1px solid #ccc;
+            }
+            .tabla-precios {
+                margin-top: 10px;
+            }
+            .resultados-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .resultado-item {
+                border: 1px solid #ccc;
+                box-shadow: none;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -263,6 +321,10 @@
             <div class="form-group">
                 <label for="tasa-euro">Euro BCV (Bs.)</label>
                 <input type="number" id="tasa-euro" placeholder="Ej: 40.15" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="tasa-usd-eur">Tasa Dólar a Euro</label>
+                <input type="number" id="tasa-usd-eur" placeholder="Ej: 0.92" step="0.001">
             </div>
         </div>
 
@@ -304,7 +366,10 @@
         
         <div class="cotizacion-container">
             <h2>Cotización</h2>
-            <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Totales</button>
+            <div class="cotizacion-actions">
+                <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Totales</button>
+                <button id="btn-imprimir" class="btn btn-info">Imprimir Cotización</button>
+            </div>
             <div id="cotizacion-resultados" class="resultados-grid">
                 <!-- Los resultados se mostrarán aquí -->
             </div>
@@ -317,6 +382,7 @@
             const tasaBcvInput = document.getElementById('tasa-bcv');
             const tasaBinanceInput = document.getElementById('tasa-binance');
             const tasaEuroInput = document.getElementById('tasa-euro');
+            const tasaUsdEurInput = document.getElementById('tasa-usd-eur');
             
             const productoNombreInput = document.getElementById('producto-nombre');
             const productoCostoInput = document.getElementById('producto-costo');
@@ -326,6 +392,7 @@
             const tablaBody = document.getElementById('tabla-body');
 
             const btnCalcularCotizacion = document.getElementById('btn-calcular-cotizacion');
+            const btnImprimir = document.getElementById('btn-imprimir');
             const cotizacionResultados = document.getElementById('cotizacion-resultados');
 
             // --- ALMACÉN DE DATOS ---
@@ -342,9 +409,17 @@
                 return `$ ${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
             
-            const formatOriginalCost = (cost, currency) => {
-                const symbol = currency === 'USD' ? '$' : '€';
-                return `${symbol} ${cost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const formatOriginalCost = (p) => {
+                let baseCost, convertedCost = '';
+                if (p.moneda === 'USD') {
+                    baseCost = `$ ${p.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    if (p.costoEnEur) {
+                        convertedCost = ` / € ${p.costoEnEur.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                } else { // EUR
+                    baseCost = `€ ${p.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+                return `${baseCost}<span class="costo-original-eur">${convertedCost}</span>`;
             };
 
             // --- FUNCIONES PRINCIPALES ---
@@ -352,6 +427,7 @@
                 const tasaBcv = parseFloat(tasaBcvInput.value);
                 const tasaBinance = parseFloat(tasaBinanceInput.value);
                 const tasaEuro = parseFloat(tasaEuroInput.value);
+                const tasaUsdEur = parseFloat(tasaUsdEurInput.value);
                 
                 const nombre = productoNombreInput.value.trim();
                 const costo = parseFloat(productoCostoInput.value);
@@ -362,25 +438,20 @@
                     return;
                 }
 
-                let precioBcv = null;
-                let precioBinance = null;
-                let precioEuro = null;
+                let precioBcv = null, precioBinance = null, precioEuro = null, costoEnEur = null;
 
                 if (moneda === 'USD') {
                     if (!isNaN(tasaBcv)) precioBcv = costo * tasaBcv;
                     if (!isNaN(tasaBinance)) precioBinance = costo * tasaBinance;
+                    if (!isNaN(tasaUsdEur)) costoEnEur = costo * tasaUsdEur;
                 } else if (moneda === 'EUR') {
                     if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
                 }
 
                 const producto = {
                     id: Date.now(),
-                    nombre,
-                    costo,
-                    moneda,
-                    precioBcv,
-                    precioBinance,
-                    precioEuro
+                    nombre, costo, moneda, costoEnEur,
+                    precioBcv, precioBinance, precioEuro
                 };
                 productos.push(producto);
                 
@@ -401,13 +472,14 @@
                     return;
                 }
 
-                let totalUSD = 0;
-                let totalBsBinance = 0;
+                let totalUSD = 0, totalBsBinance = 0;
 
                 productos.forEach(p => {
                     if (p.moneda === 'USD') {
                         totalUSD += p.costo;
                     }
+                    // Podríamos sumar los euros convertidos a USD si hubiera una tasa EUR->USD
+
                     if (p.precioBinance !== null && !isNaN(p.precioBinance)) {
                         totalBsBinance += p.precioBinance;
                     }
@@ -432,7 +504,7 @@
                     const newRow = document.createElement('tr');
                     newRow.innerHTML = `
                         <td data-label="Producto">${p.nombre}</td>
-                        <td data-label="Costo Original">${formatOriginalCost(p.costo, p.moneda)}</td>
+                        <td data-label="Costo Original">${formatOriginalCost(p)}</td>
                         <td data-label="Precio en Bs (Tasa BCV)">${formatBs(p.precioBcv)}</td>
                         <td data-label="Precio en Bs (Tasa Binance)">${formatBs(p.precioBinance)}</td>
                         <td data-label="Precio en Bs (Tasa Euro)">${formatBs(p.precioEuro)}</td>
@@ -445,6 +517,7 @@
             // --- ASIGNAR EVENTOS ---
             btnAgregar.addEventListener('click', agregarProducto);
             btnCalcularCotizacion.addEventListener('click', calcularCotizacion);
+            btnImprimir.addEventListener('click', () => window.print());
 
             tablaBody.addEventListener('click', (e) => {
                 if (e.target.classList.contains('btn-eliminar')) {
