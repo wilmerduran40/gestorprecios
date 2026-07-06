@@ -1,728 +1,1648 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Precios y Cotizaciones</title>
+    <title>VeneRemesas - Panel Profesional de Control de Cambios</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom configuration tokens for Fintech Aesthetics -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        fintech: {
+                            deep: '#0a0d14',
+                            card: '#111622',
+                            border: '#1f293d',
+                            accent: '#10b981', // Emerald for security and trust
+                            accentHover: '#059669',
+                            gold: '#f59e0b',
+                            textMuted: '#9ca3af'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        :root {
-            --primary-color: #0056b3;
-            --secondary-color: #f8f9fa;
-            --border-color: #dee2e6;
-            --text-color: #212529;
-            --white: #fff;
-            --danger-color: #dc3545;
-            --danger-hover: #c82333;
-            --success-color: #28a745;
-            --info-color: #17a2b8;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f4f4f9;
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            background-color: #06080c;
+            color: #f3f4f6;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: auto;
-            background: var(--white);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        /* Custom dynamic components */
+        .glass-header {
+            background: rgba(17, 22, 34, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #1f293d;
         }
-
-        h1, h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 20px;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-
-        .tasas-container, .producto-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            background-color: var(--secondary-color);
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border: 1px solid var(--border-color);
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
         }
-        
-        .producto-form {
-             grid-template-columns: 2fr 1fr 1fr auto;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        input[type="number"], input[type="text"], select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
             border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1rem;
         }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.25);
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
         }
-
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: background-color 0.2s ease-in-out;
-            align-self: end;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background-color: #004494;
-        }
-
-        .btn-info {
-            background-color: var(--info-color);
-            color: var(--white);
-        }
-        .btn-info:hover {
-            background-color: #138496;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: var(--white);
-            padding: 5px 10px;
-            font-size: 0.9rem;
-        }
-        
-        .btn-danger:hover {
-            background-color: var(--danger-hover);
-        }
-
-        .tabla-precios {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
-        }
-
-        .tabla-precios th, .tabla-precios td {
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            text-align: left;
-        }
-
-        .tabla-precios thead {
-            background-color: var(--primary-color);
-            color: var(--white);
-        }
-
-        .tabla-precios tbody tr:nth-child(even) {
-            background-color: var(--secondary-color);
-        }
-        
-        .tabla-precios td:nth-child(n+3) {
-            text-align: right;
-            font-family: "Courier New", Courier, monospace;
-            font-weight: bold;
-        }
-
-        .costo-original-eur {
-            font-size: 0.85em;
-            color: #6c757d;
-        }
-        
-        .na {
-            color: #999;
-            text-align: center !important;
-            font-style: italic;
-        }
-
-        .cotizacion-container {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-        }
-
-        .cotizacion-actions {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .payment-options {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .resultados-grid {
-            margin-top: 20px;
-        }
-
-        .resultado-item {
-            background-color: var(--white);
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-color);
-        }
-
-        .resultado-item h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-            font-size: 1.1rem;
-        }
-
-        .resultado-item p {
-            margin: 5px 0 0;
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        
-        .resultado-item p.total-bs {
-            color: var(--success-color);
-        }
-
-        #printable-receipt {
-            display: none;
-        }
-
-        .calculo-precio-venta-bcv-container {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-        }
-        .calculo-precio-venta-bcv-container .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
-            gap: 20px;
-            align-items: end;
-        }
-
-        /* --- ESTILOS PARA MÓVILES --- */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 15px;
-            }
-            .producto-form {
-                grid-template-columns: 1fr;
-            }
-            .calculo-precio-venta-bcv-container .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .tabla-precios thead {
-                display: none;
-            }
-
-            .tabla-precios, .tabla-precios tbody, .tabla-precios tr, .tabla-precios td {
-                display: block;
-                width: 100%;
-            }
-
-            .tabla-precios tr {
-                margin-bottom: 15px;
-                border: 1px solid var(--border-color);
-                border-radius: 5px;
-                padding: 10px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            }
-
-            .tabla-precios td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 5px;
-                border: none;
-                border-bottom: 1px solid #f0f0f0;
-                text-align: right !important;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-                font-weight: normal;
-            }
-            
-            .tabla-precios td:last-child {
-                border-bottom: none;
-                justify-content: center;
-                padding-top: 10px;
-            }
-
-            .tabla-precios td::before {
-                content: attr(data-label);
-                font-weight: 600;
-                color: var(--primary-color);
-                text-align: left;
-                margin-right: 10px;
-            }
-            
-            .na {
-                text-align: right !important;
-            }
-        }
-
-        /* --- ESTILOS PARA IMPRESIÓN --- */
-        @media print {
-            body {
-                background-color: var(--white);
-                padding: 0;
-                margin: 0;
-            }
-            .non-printable {
-                display: none !important;
-            }
-            #printable-receipt {
-                display: block;
-                font-family: 'sans-serif';
-                font-size: 12pt;
-                color: #000;
-                padding: 20mm;
-            }
-            #printable-receipt .logo {
-                display: block;
-                margin: 0 auto 25px;
-                max-width: 180px;
-                max-height: 100px;
-            }
-            #printable-receipt h1 {
-                color: #000;
-                text-align: center;
-                font-size: 22pt;
-            }
-            #printable-receipt table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 25px;
-            }
-            #printable-receipt th, #printable-receipt td {
-                border: 1px solid #888;
-                padding: 10px;
-                text-align: left;
-            }
-            #printable-receipt th {
-                background-color: #eee;
-            }
-            #printable-receipt .total-row td {
-                font-weight: bold;
-                font-size: 14pt;
-                border-top: 2px solid #000;
-            }
-            #printable-receipt .text-right {
-                text-align: right;
-            }
-        }
-
     </style>
 </head>
-<body>
+<body class="font-sans antialiased min-h-screen flex flex-col justify-between">
 
-    <div class="container non-printable">
-        <h1>Gestor de Precios y Cotizaciones</h1>
-
-        <h2>Tasas de Referencia</h2>
-        <div class="tasas-container">
-            <div class="form-group">
-                <label for="tasa-bcv">Dólar BCV (Bs.)</label>
-                <input type="number" id="tasa-bcv" placeholder="Ej: 36.50" step="0.01">
-            </div>
-            <div class="form-group">
-                <label for="tasa-binance">Dólar Binance (Bs.)</label>
-                <input type="number" id="tasa-binance" placeholder="Ej: 38.20" step="0.01">
-            </div>
-            <div class="form-group">
-                <label for="tasa-euro">Euro BCV (Bs.)</label>
-                <input type="number" id="tasa-euro" placeholder="Ej: 40.15" step="0.01">
-            </div>
-            <div class="form-group">
-                <label for="tasa-usd-eur">Tasa Dólar a Euro</label>
-                <input type="number" id="tasa-usd-eur" placeholder="Ej: 0.92" step="0.001">
-            </div>
-        </div>
-
-        <h2>Añadir Producto</h2>
-        <div class="producto-form">
-            <div class="form-group">
-                <label for="producto-nombre">Nombre del Producto</label>
-                <input type="text" id="producto-nombre" placeholder="Ej: Laptop Modelo X">
-            </div>
-            <div class="form-group">
-                <label for="producto-costo">Costo</label>
-                <input type="number" id="producto-costo" placeholder="Ej: 850.00" step="0.01">
-            </div>
-            <div class="form-group">
-                <label for="producto-moneda">Moneda</label>
-                <select id="producto-moneda">
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                </select>
-            </div>
-            <button id="btn-agregar" class="btn btn-primary">Añadir</button>
-        </div>
-
-        <table class="tabla-precios">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Costo Original</th>
-                    <th>Precio en Bs (Tasa BCV)</th>
-                    <th>Precio en Bs (Tasa Binance)</th>
-                    <th>Precio en Bs (Tasa Euro)</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body">
-                <!-- Las filas de productos se añadirán aquí -->
-            </tbody>
-        </table>
-        
-        <div class="cotizacion-container">
-            <h2>Cotización</h2>
-            <div class="cotizacion-actions">
-                <div class="payment-options">
-                    <strong>Pagar con:</strong>
-                    <label><input type="radio" name="payment-method" value="USD" checked> USD/USDT</label>
-                    <label><input type="radio" name="payment-method" value="VES"> Bolívares</label>
+    <!-- Header / Top Bar -->
+    <header class="glass-header sticky top-0 z-40 px-4 py-3.5">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-fintech-accent/15 border border-fintech-accent/30 text-fintech-accent rounded-xl flex items-center justify-center shadow-lg shadow-fintech-accent/10">
+                    <i class="fa-solid fa-paper-plane text-lg animate-pulse"></i>
                 </div>
-                <button id="btn-calcular-cotizacion" class="btn btn-primary">Calcular Total</button>
-                <button id="btn-imprimir" class="btn btn-info">Imprimir Recibo</button>
+                <div>
+                    <h1 class="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
+                        VeneRemesas <span class="bg-fintech-accent/10 text-fintech-accent text-[10px] px-2 py-0.5 rounded-full border border-fintech-accent/20 font-bold">Oficial</span>
+                    </h1>
+                    <p class="text-[10px] text-fintech-textMuted font-medium">Plataforma Segura de Transferencias Locales</p>
+                </div>
             </div>
-            <div id="cotizacion-resultados" class="resultados-grid">
-                <!-- Los resultados se mostrarán aquí -->
+
+            <!-- Header Action Tools -->
+            <div class="flex items-center gap-2">
+                <!-- Status badge -->
+                <div class="hidden md:flex items-center gap-2 bg-fintech-deep px-3 py-1.5 rounded-lg border border-fintech-border text-[11px]">
+                    <span class="w-2 h-2 rounded-full bg-fintech-accent animate-ping"></span>
+                    <span class="text-gray-300 font-semibold" id="sysTimeBadge">Mesa Operativa Activa</span>
+                </div>
+                
+                <!-- Toggle Dashboard Mode Lock -->
+                <button id="btnToggleDashboard" class="bg-fintech-card hover:bg-fintech-border text-white text-xs px-3.5 py-1.5 rounded-lg border border-fintech-border transition flex items-center gap-1.5 font-bold shadow-sm">
+                    <i id="btnToggleIcon" class="fa-solid fa-lock text-fintech-gold"></i>
+                    <span id="btnToggleText">Acceso Operador</span>
+                </button>
             </div>
         </div>
+    </header>
+
+    <!-- MAIN BODY AREA -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 space-y-6">
+
+        <!-- Password modal overlay -->
+        <div id="authOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+            <div class="bg-fintech-card border border-fintech-border rounded-2xl max-w-xs w-full p-6 shadow-2xl relative">
+                <button id="closeAuthBtn" class="absolute top-4 right-4 text-fintech-textMuted hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="text-center space-y-2 mb-5">
+                    <div class="w-12 h-12 bg-fintech-gold/15 border border-fintech-gold/30 text-fintech-gold rounded-full flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-white font-extrabold text-sm">Autenticación Requerida</h3>
+                    <p class="text-[11px] text-fintech-textMuted">Por seguridad, introduce tu contraseña de acceso para el panel operativo.</p>
+                </div>
+                <div class="space-y-3">
+                    <input type="password" id="authPassInput" placeholder="Clave Operador (Prueba: 1234)" 
+                        class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3.5 text-xs text-white placeholder-gray-500 font-medium focus:outline-none focus:border-fintech-accent transition text-center">
+                    <button id="btnSubmitAuth" class="w-full bg-fintech-accent hover:bg-fintech-accentHover text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg shadow-fintech-accent/15">
+                        Verificar Cuenta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENT PLATFORM CONTAINER (Visible by default) -->
+        <div id="clientViewContainer" class="space-y-6">
+            
+            <!-- Safe Alert Message -->
+            <div class="bg-fintech-accent/10 border border-fintech-accent/20 rounded-xl p-4 flex gap-3 items-start">
+                <i class="fa-solid fa-circle-check text-fintech-accent text-lg mt-0.5 animate-bounce"></i>
+                <div>
+                    <h4 class="text-white font-bold text-xs">Cero Comisiones en Envíos de Remesas</h4>
+                    <p class="text-[11px] text-gray-300 mt-0.5 leading-relaxed">
+                        Nuestras tasas ya tienen la comisión calculada. Sin recargos adicionales ocultos. El monto cotizado en bolívares es exactamente el monto neto que recibirá tu beneficiario en Venezuela vía Pago Móvil o transferencia directa.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Calculadora y Registro Form Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Left: Calculadora (5 cols) -->
+                <div class="lg:col-span-5 bg-fintech-card border border-fintech-border rounded-2xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-fintech-accent/5 rounded-bl-full pointer-events-none"></div>
+                    <h3 class="font-extrabold text-sm text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-fintech-accent"></i> Cotizador de Remesas en Vivo
+                    </h3>
+
+                    <div class="space-y-4">
+                        <!-- Origin Country Selector -->
+                        <div>
+                            <label class="block text-[11px] text-fintech-textMuted mb-1.5 font-bold uppercase tracking-wider">País de Envío (Origen)</label>
+                            <div class="grid grid-cols-4 gap-1.5">
+                                <button type="button" onclick="selectOriginCurrency('USD')" id="btnCurrency_USD" class="py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-accent/10 border-fintech-accent text-white shadow-md">
+                                    <span class="text-base">🇺🇸</span>
+                                    <span>USD</span>
+                                </button>
+                                <button type="button" onclick="selectOriginCurrency('EUR')" id="btnCurrency_EUR" class="py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-deep border-fintech-border text-fintech-textMuted hover:border-fintech-border/80">
+                                    <span class="text-base">🇪🇸</span>
+                                    <span>EUR</span>
+                                </button>
+                                <button type="button" onclick="selectOriginCurrency('CLP')" id="btnCurrency_CLP" class="py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-deep border-fintech-border text-fintech-textMuted hover:border-fintech-border/80">
+                                    <span class="text-base">🇨🇱</span>
+                                    <span>CLP</span>
+                                </button>
+                                <button type="button" onclick="selectOriginCurrency('COP')" id="btnCurrency_COP" class="py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-deep border-fintech-border text-fintech-textMuted hover:border-fintech-border/80">
+                                    <span class="text-base">🇨🇴</span>
+                                    <span>COP</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Amount to Send input -->
+                        <div>
+                            <label class="block text-[11px] text-fintech-textMuted mb-1.5 font-bold uppercase tracking-wider">Monto a Enviar en Divisa</label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <input type="number" id="clientAmountInput" value="100" min="5" step="5"
+                                    class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-3 pl-4 pr-16 text-white font-extrabold focus:outline-none focus:border-fintech-accent transition text-sm">
+                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                    <span class="text-xs text-fintech-accent font-extrabold" id="clientCurrencyLabel">USD</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Rates Metric Box -->
+                        <div class="p-4 bg-fintech-deep border border-fintech-border/60 rounded-xl space-y-3 font-mono">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-fintech-textMuted">Tasa de cambio garantizada:</span>
+                                <span class="text-white font-extrabold" id="clientRateDisplay">0.00 Bs / USD</span>
+                            </div>
+                            <div class="h-px bg-fintech-border/60"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-fintech-textMuted text-xs font-sans">Monto a recibir en Venezuela:</span>
+                                <div class="text-right">
+                                    <span class="text-lg font-black text-fintech-accent block tracking-tight" id="clientTotalDisplay">0.00 VES</span>
+                                    <span class="text-[9px] text-fintech-accent/75 font-semibold block uppercase font-sans">Pago Móvil Inmediato</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Beneficiary Information (7 cols) -->
+                <div class="lg:col-span-7 bg-fintech-card border border-fintech-border rounded-2xl p-6 relative">
+                    <h3 class="font-extrabold text-sm text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-user-check text-fintech-accent"></i> Datos de Pago de tu Beneficiario
+                    </h3>
+
+                    <form id="remittanceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Beneficiary full name -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Nombre Completo del Beneficiario</label>
+                            <input type="text" id="clientBeneName" required placeholder="Ej: Maria de los Angeles Perez"
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent transition">
+                        </div>
+
+                        <!-- ID Number (Cédula de Identidad) -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Cédula de Identidad (V- / E-)</label>
+                            <input type="text" id="clientBeneId" required placeholder="Ej: V-12.345.678"
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent transition">
+                        </div>
+
+                        <!-- Bank Selection -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Banco de Destino</label>
+                            <select id="clientBeneBank" required class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent transition">
+                                <option value="Banesco">Banesco Banco Universal</option>
+                                <option value="Venezuela">Banco de Venezuela (BDV)</option>
+                                <option value="Mercantil">Banco Mercantil</option>
+                                <option value="Provincial">BBVA Provincial</option>
+                                <option value="Pago Móvil">Otro Banco (Pago Móvil)</option>
+                            </select>
+                        </div>
+
+                        <!-- Contact Phone / Pago Movil info -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Datos para Pago Móvil / Cuenta Bancaria</label>
+                            <input type="text" id="clientBeneDetails" required placeholder="Ej: Tel: 0414-1234567 | Cuenta: 0102-XXXX..."
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent transition">
+                        </div>
+
+                        <!-- Sender personal confirmation name -->
+                        <div class="md:col-span-2 pt-2 border-t border-fintech-border/60">
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Tu Nombre de Contacto (Remitente)</label>
+                            <input type="text" id="clientSenderName" required placeholder="Ej: Juan Perez (Desde el exterior)"
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent transition">
+                        </div>
+
+                        <!-- Form Submit Button -->
+                        <div class="md:col-span-2 pt-2">
+                            <button type="submit" class="w-full bg-fintech-accent hover:bg-fintech-accentHover text-white font-extrabold text-sm py-3 rounded-xl transition shadow-lg shadow-fintech-accent/10 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Generar Solicitud de Envío
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- OPERATOR INTERACTIVE DASHBOARD CONTAINER (Hidden by default, protected) -->
+        <div id="operatorDashboardContainer" class="hidden space-y-6">
+            
+            <!-- Quick Alert Block for Operator -->
+            <div class="bg-fintech-deep border border-fintech-border rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-sm font-extrabold text-white">Panel Operativo: Mesa de Cambios</h3>
+                    <p class="text-xs text-fintech-textMuted mt-0.5">Controla las colas, comisiones y límites de Sudeban activamente.</p>
+                </div>
+                <!-- Status metrics -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-fintech-card border border-fintech-border px-3 py-1.5 rounded-xl text-center">
+                        <span class="text-[9px] text-fintech-textMuted block font-bold uppercase">Remesas en Cola</span>
+                        <span id="operatorQueueCount" class="text-xs font-black text-white">3</span>
+                    </div>
+                    <div class="bg-fintech-card border border-fintech-border px-3 py-1.5 rounded-xl text-center">
+                        <span class="text-[9px] text-fintech-textMuted block font-bold uppercase">Rendimiento Hoy</span>
+                        <span id="operatorTodayReturn" class="text-xs font-black text-fintech-accent">+0.00%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasa Control Panel (Dynamic custom rate editor requested) -->
+            <div class="bg-fintech-card border border-fintech-border rounded-2xl p-5 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-fintech-gold/5 rounded-bl-full pointer-events-none"></div>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-extrabold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-fintech-gold"></i> Configuración Activa de Tasas (Pared de Ganancia)
+                    </h3>
+                    <span class="text-[10px] text-fintech-textMuted">Modifica lo que el cliente final visualiza</span>
+                </div>
+
+                <!-- Rates editor grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- USD rate config card -->
+                    <div class="bg-fintech-deep border border-fintech-border p-4 rounded-xl space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-white">USD 🇺🇸</span>
+                            <button onclick="toggleTasaOverride('USD')" id="btnOverrideLock_USD" class="text-[10px] text-fintech-gold font-bold flex items-center gap-1 hover:underline">
+                                <i class="fa-solid fa-lock"></i> Auto (Margen)
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-[10px] text-fintech-textMuted">Tasa Binance (P2P):</span>
+                                <input type="number" id="inputTasaBinance_USD" value="750.00" step="0.5" oninput="recalculateManualOrAutoTasa('USD')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between" id="boxMargen_USD">
+                                <span class="text-[10px] text-fintech-textMuted">Margen Ganancia (%):</span>
+                                <input type="number" id="inputMargen_USD" value="3.0" step="0.1" oninput="recalculateManualOrAutoTasa('USD')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between items-center pt-1 border-t border-fintech-border/40">
+                                <span class="text-[10px] text-white font-bold">Paga al Cliente:</span>
+                                <input type="number" id="inputFinalTasa_USD" value="727.50" step="0.01" oninput="handleManualTasaInput('USD')" disabled class="w-20 bg-fintech-card/50 border border-fintech-border text-fintech-accent font-extrabold text-right text-[11px] rounded px-1 focus:outline-none focus:border-fintech-accent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EUR rate config card -->
+                    <div class="bg-fintech-deep border border-fintech-border p-4 rounded-xl space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-white">EUR 🇪🇸</span>
+                            <button onclick="toggleTasaOverride('EUR')" id="btnOverrideLock_EUR" class="text-[10px] text-fintech-gold font-bold flex items-center gap-1 hover:underline">
+                                <i class="fa-solid fa-lock"></i> Auto (Margen)
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-[10px] text-fintech-textMuted">Tasa Binance (P2P):</span>
+                                <input type="number" id="inputTasaBinance_EUR" value="805.00" step="0.5" oninput="recalculateManualOrAutoTasa('EUR')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between" id="boxMargen_EUR">
+                                <span class="text-[10px] text-fintech-textMuted">Margen Ganancia (%):</span>
+                                <input type="number" id="inputMargen_EUR" value="3.5" step="0.1" oninput="recalculateManualOrAutoTasa('EUR')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between items-center pt-1 border-t border-fintech-border/40">
+                                <span class="text-[10px] text-white font-bold">Paga al Cliente:</span>
+                                <input type="number" id="inputFinalTasa_EUR" value="776.82" step="0.01" oninput="handleManualTasaInput('EUR')" disabled class="w-20 bg-fintech-card/50 border border-fintech-border text-fintech-accent font-extrabold text-right text-[11px] rounded px-1 focus:outline-none focus:border-fintech-accent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CLP rate config card -->
+                    <div class="bg-fintech-deep border border-fintech-border p-4 rounded-xl space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-white">CLP 🇨🇱</span>
+                            <button onclick="toggleTasaOverride('CLP')" id="btnOverrideLock_CLP" class="text-[10px] text-fintech-gold font-bold flex items-center gap-1 hover:underline">
+                                <i class="fa-solid fa-lock"></i> Auto (Margen)
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-[10px] text-fintech-textMuted">Tasa Binance (P2P):</span>
+                                <input type="number" id="inputTasaBinance_CLP" value="0.785" step="0.001" oninput="recalculateManualOrAutoTasa('CLP')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between" id="boxMargen_CLP">
+                                <span class="text-[10px] text-fintech-textMuted">Margen Ganancia (%):</span>
+                                <input type="number" id="inputMargen_CLP" value="4.0" step="0.1" oninput="recalculateManualOrAutoTasa('CLP')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between items-center pt-1 border-t border-fintech-border/40">
+                                <span class="text-[10px] text-white font-bold">Paga al Cliente:</span>
+                                <input type="number" id="inputFinalTasa_CLP" value="0.753" step="0.001" oninput="handleManualTasaInput('CLP')" disabled class="w-20 bg-fintech-card/50 border border-fintech-border text-fintech-accent font-extrabold text-right text-[11px] rounded px-1 focus:outline-none focus:border-fintech-accent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COP rate config card -->
+                    <div class="bg-fintech-deep border border-fintech-border p-4 rounded-xl space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-white">COP 🇨🇴</span>
+                            <button onclick="toggleTasaOverride('COP')" id="btnOverrideLock_COP" class="text-[10px] text-fintech-gold font-bold flex items-center gap-1 hover:underline">
+                                <i class="fa-solid fa-lock"></i> Auto (Margen)
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-[10px] text-fintech-textMuted">Tasa Binance (P2P):</span>
+                                <input type="number" id="inputTasaBinance_COP" value="0.188" step="0.001" oninput="recalculateManualOrAutoTasa('COP')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between" id="boxMargen_COP">
+                                <span class="text-[10px] text-fintech-textMuted">Margen Ganancia (%):</span>
+                                <input type="number" id="inputMargen_COP" value="4.0" step="0.1" oninput="recalculateManualOrAutoTasa('COP')" class="w-16 bg-fintech-card border border-fintech-border text-white text-right text-[10px] rounded px-1">
+                            </div>
+                            <div class="flex justify-between items-center pt-1 border-t border-fintech-border/40">
+                                <span class="text-[10px] text-white font-bold">Paga al Cliente:</span>
+                                <input type="number" id="inputFinalTasa_COP" value="0.180" step="0.001" oninput="handleManualTasaInput('COP')" disabled class="w-20 bg-fintech-card/50 border border-fintech-border text-fintech-accent font-extrabold text-right text-[11px] rounded px-1 focus:outline-none focus:border-fintech-accent">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Columns (Pending list, Settlement and Limits) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Queue Container List (5 cols) -->
+                <div class="lg:col-span-5 bg-fintech-card border border-fintech-border rounded-2xl p-4 flex flex-col h-[520px]">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-fintech-accent"></i> Solicitudes Recibidas (Pendientes)
+                        </h3>
+                        <button onclick="openCrudModal('create_pending')" class="bg-fintech-accent/15 hover:bg-fintech-accent/25 border border-fintech-accent/30 text-fintech-accent px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Crear Manual
+                        </button>
+                    </div>
+                    
+                    <!-- Search Queue Bar -->
+                    <div class="relative rounded-lg shadow-sm mb-3">
+                        <input type="text" id="opSearchQueue" placeholder="Buscar por cliente o banco..." oninput="renderQueue()"
+                            class="w-full bg-fintech-deep border border-fintech-border rounded-lg py-1.5 pl-8 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none">
+                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-500">
+                            <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Queue list elements -->
+                    <div id="queueListContainer" class="flex-grow overflow-y-auto space-y-2 pr-1 text-xs">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- Active Settlement Card & Calculation (7 cols) -->
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    
+                    <!-- NEW: Active Beneficiary payment info block (Emerald box highlighted for payment processing) -->
+                    <div id="opBeneficiaryDetailsCard" class="hidden bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-building-columns"></i> Datos de Liquidación (Copiar para transferir)
+                            </h4>
+                            <button onclick="copyUnifiedFicha()" class="text-[10px] bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 font-extrabold py-1 px-2.5 rounded border border-emerald-500/30 transition">
+                                <i class="fa-solid fa-copy"></i> Copiar Ficha Completa
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="p-2 bg-fintech-deep rounded-lg border border-fintech-border relative group">
+                                <span class="text-[9px] text-fintech-textMuted block">Beneficiario:</span>
+                                <span id="opBeneName" class="text-white font-extrabold text-[11px] block pr-6 truncate">Maria Perez</span>
+                                <button onclick="copySingleField('opBeneName')" class="absolute top-2 right-2 text-[10px] text-fintech-textMuted hover:text-white transition opacity-0 group-hover:opacity-100"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                            <div class="p-2 bg-fintech-deep rounded-lg border border-fintech-border relative group">
+                                <span class="text-[9px] text-fintech-textMuted block">Cédula:</span>
+                                <span id="opBeneId" class="text-white font-mono font-bold block pr-6">V-12345678</span>
+                                <button onclick="copySingleField('opBeneId')" class="absolute top-2 right-2 text-[10px] text-fintech-textMuted hover:text-white transition opacity-0 group-hover:opacity-100"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                            <div class="p-2 bg-fintech-deep rounded-lg border border-fintech-border relative group">
+                                <span class="text-[9px] text-fintech-textMuted block">Banco Destino:</span>
+                                <span id="opBeneBank" class="text-white font-bold block pr-6">Banesco</span>
+                                <button onclick="copySingleField('opBeneBank')" class="absolute top-2 right-2 text-[10px] text-fintech-textMuted hover:text-white transition opacity-0 group-hover:opacity-100"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                            <div class="p-2 bg-fintech-deep rounded-lg border border-fintech-border relative group">
+                                <span class="text-[9px] text-fintech-textMuted block">Pago Móvil / Cuenta:</span>
+                                <span id="opBeneDetails" class="text-white font-mono block pr-6 truncate">0414-1234567</span>
+                                <button onclick="copySingleField('opBeneDetails')" class="absolute top-2 right-2 text-[10px] text-fintech-textMuted hover:text-white transition opacity-0 group-hover:opacity-100"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arbitrage Calculation workspace -->
+                    <div class="bg-fintech-card border border-fintech-border rounded-2xl p-6 relative">
+                        <h3 class="font-extrabold text-sm text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-fintech-accent"></i> 
+                            Calculadora de Arbitraje y Margen Real
+                        </h3>
+
+                        <!-- Inactive block overlay if no queue card chosen -->
+                        <div id="opNoSelectionOverlay" class="absolute inset-0 bg-fintech-deep/95 z-10 flex flex-col items-center justify-center p-6 text-center text-xs">
+                            <i class="fa-solid fa-hand-pointer text-fintech-accent text-3xl animate-bounce mb-2"></i>
+                            <span class="text-white font-extrabold text-sm">Ninguna Solicitud Seleccionada</span>
+                            <p class="text-fintech-textMuted mt-1 max-w-xs">Selecciona un elemento de la lista de solicitudes pendientes a la izquierda para poder procesar y arbitrar.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Input Arbitrage Rate (Binance Buy USDT) -->
+                            <div>
+                                <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Paso 1: Tasa Arbitraje Binance (P2P Venta Bs)</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <input type="number" id="opArbitrageTasaInput" value="750.00" step="0.01" oninput="calculateArbitrage()"
+                                        class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 pl-3 pr-10 text-white text-xs font-semibold focus:outline-none focus:border-fintech-accent">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><span class="text-[9px] text-fintech-textMuted">Bs</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Pago Movil commission selector -->
+                            <div>
+                                <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase tracking-wider">Paso 2: Comisión de Envío (Pago Móvil / VES)</label>
+                                <select id="opComisionVes" onchange="calculateArbitrage()" class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-fintech-accent">
+                                    <option value="0.003" selected>Pago Móvil Interbancario (0.30%)</option>
+                                    <option value="0.00">Mismo Banco / Interno (0.00%)</option>
+                                    <option value="0.0012">Comisión Transferencia BDV (0.12%)</option>
+                                    <option value="0.005">Comisión Especial Terceros (0.50%)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Mathematical verification box -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-fintech-deep/60 border border-fintech-border rounded-xl mb-4 font-mono text-xs">
+                            <div>
+                                <span class="text-[9px] text-fintech-textMuted block font-sans">A Pagar en Vzla:</span>
+                                <span id="opVesToPayDisplay" class="text-white font-extrabold">0.00 VES</span>
+                            </div>
+                            <div class="border-t sm:border-t-0 sm:border-l border-fintech-border/60 pt-2 sm:pt-0 sm:pl-3">
+                                <span class="text-[9px] text-fintech-textMuted block font-sans">Comisión Bancaria:</span>
+                                <span id="opComisionVesDisplay" class="text-fintech-gold font-bold">0.00 VES</span>
+                            </div>
+                            <div class="border-t sm:border-t-0 sm:border-l border-fintech-border/60 pt-2 sm:pt-0 sm:pl-3">
+                                <span class="text-[9px] text-fintech-textMuted block font-sans">Ganancia Neta Real:</span>
+                                <span id="opGananciaNeta" data-value="0" class="text-fintech-accent font-black">0.00 VES</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button id="btnResetArbitrage" class="w-1/3 bg-fintech-deep hover:bg-fintech-border text-white text-xs font-bold py-2.5 rounded-xl border border-fintech-border transition">
+                                Resetear
+                            </button>
+                            <button id="btnExecuteSettlement" class="w-2/3 bg-fintech-accent hover:bg-fintech-accentHover text-white text-xs font-black py-2.5 rounded-xl transition shadow-lg shadow-fintech-accent/15">
+                                Completar y Liquidar Remesa
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Safety Limits & Historical Ledger Blocks -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Banks Limits (5 cols) -->
+                <div class="lg:col-span-5 bg-fintech-card border border-fintech-border rounded-2xl p-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-xs text-white mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-fintech-gold"></i> Monitor de Límites Diarios (Sudeban)
+                        </h3>
+                        <p class="text-[11px] text-fintech-textMuted mb-4">Evita el bloqueo de tus cuentas personales regulando el volumen diario procesado.</p>
+                        
+                        <div id="limitsBarsContainer" class="space-y-4">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-fintech-border text-[9px] text-fintech-gold font-semibold flex items-start gap-1.5 leading-relaxed">
+                        <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        <span>Importante: Detén las transacciones en cuentas que alcancen el 80% de su capacidad hoy.</span>
+                    </div>
+                </div>
+
+                <!-- History Ledger (7 cols) -->
+                <div class="lg:col-span-7 bg-fintech-card border border-fintech-border rounded-2xl p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-book text-fintech-accent"></i> Registro Diario de Operaciones
+                        </h3>
+                        <div class="text-right">
+                            <span class="text-[9px] text-fintech-textMuted block font-bold">TOTAL GANANCIA</span>
+                            <span id="ledgerProfitTotal" class="text-xs font-black text-fintech-accent">0.00 VES</span>
+                        </div>
+                    </div>
+
+                    <div class="max-h-[220px] overflow-y-auto pr-1">
+                        <table class="w-full text-left border-collapse text-[11px]">
+                            <thead>
+                                <tr class="border-b border-fintech-border text-fintech-textMuted font-bold text-[9px] uppercase">
+                                    <th class="py-2">Remesa</th>
+                                    <th class="py-2">Banco</th>
+                                    <th class="py-2 text-right">Monto</th>
+                                    <th class="py-2 text-right">VES Pagados</th>
+                                    <th class="py-2 text-right">Ganancia</th>
+                                    <th class="py-2 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledgerTableBody" class="divide-y divide-fintech-border/40 text-gray-300">
+                                <!-- Filled dynamically -->
+                            </tbody>
+                        </table>
+                        
+                        <div id="noLedgerPlaceholder" class="text-center py-8 text-gray-500 flex flex-col items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-folder-open text-xl"></i>
+                            <span>No hay registros liquidados hoy.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Receipt Modal (Dynamic virtual voucher) -->
+        <div id="receiptModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+            <div class="bg-fintech-card border border-fintech-border rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+                <button id="closeReceiptBtn" class="absolute top-4 right-4 text-fintech-textMuted hover:text-white transition">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+                
+                <div class="text-center space-y-2 mb-4">
+                    <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl" id="receiptStatusIcon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <h3 class="text-white font-extrabold text-base" id="receiptModalTitle">Transacción Completada</h3>
+                    <p class="text-xs text-fintech-textMuted" id="receiptModalSubtitle">Recibo Oficial de Operación</p>
+                </div>
+
+        <!-- CRUD Dynamic Modal Container (Create / Update for pending and history) -->
+        <div id="crudModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+            <div class="bg-fintech-card border border-fintech-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+                <button id="closeCrudBtn" class="absolute top-4 right-4 text-fintech-textMuted hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="text-center space-y-2 mb-5">
+                    <div class="w-12 h-12 bg-fintech-accent/15 border border-fintech-accent/30 text-fintech-accent rounded-full flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-solid fa-pen-to-square" id="crudModalIcon"></i>
+                    </div>
+                    <h3 class="text-white font-extrabold text-sm" id="crudModalTitle">Gestionar Registro</h3>
+                    <p class="text-[11px] text-fintech-textMuted" id="crudModalSubtitle">Modifica los detalles operativos del registro.</p>
+                </div>
+                
+                <form id="crudForm" onsubmit="saveCrudForm(event)" class="space-y-3.5">
+                    <input type="hidden" id="crudTargetId">
+                    <input type="hidden" id="crudTargetMode">
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Origin Currency -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Origen</label>
+                            <select id="crudOrigin" required onchange="recalcCrudModalTotal()" class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                                <option value="USD">USD 🇺🇸</option>
+                                <option value="EUR">EUR 🇪🇸</option>
+                                <option value="CLP">CLP 🇨🇱</option>
+                                <option value="COP">COP 🇨🇴</option>
+                            </select>
+                        </div>
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Monto a Enviar</label>
+                            <input type="number" id="crudAmount" required step="any" oninput="recalcCrudModalTotal()"
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Custom Rate applied -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Tasa de Cambio</label>
+                            <input type="number" id="crudRate" required step="any" oninput="recalcCrudModalTotal()"
+                                class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                        <!-- Total VES calculated -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">A Pagar (VES)</label>
+                            <input type="number" id="crudTotalVes" required step="any" readonly
+                                class="w-full bg-fintech-card border border-fintech-border rounded-xl py-2 px-3 text-xs text-fintech-accent font-extrabold focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-fintech-border/40 my-1"></div>
+
+                    <!-- Beneficiary Info -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Nombre del Beneficiario</label>
+                            <input type="text" id="crudBeneName" required class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Cédula</label>
+                                <input type="text" id="crudBeneId" required class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Banco Destino</label>
+                                <select id="crudBeneBank" required class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                                    <option value="Banesco">Banesco</option>
+                                    <option value="Venezuela">Banco de Venezuela (BDV)</option>
+                                    <option value="Mercantil">Banco Mercantil</option>
+                                    <option value="Provincial">BBVA Provincial</option>
+                                    <option value="Pago Móvil">Pago Móvil (Otro)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Datos Pago Móvil / Cuenta</label>
+                            <input type="text" id="crudBeneDetails" required class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                        <!-- Optional Field for Sender -->
+                        <div>
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Nombre Remitente</label>
+                            <input type="text" id="crudSenderName" placeholder="Opcional" class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                        <!-- Conditional field: Net Gain (only visible for completed ledger editing) -->
+                        <div id="crudGainContainer" class="hidden">
+                            <label class="block text-[10px] text-fintech-textMuted mb-1 font-bold uppercase">Ganancia Neta Calculada (VES)</label>
+                            <input type="number" id="crudGain" step="any" class="w-full bg-fintech-deep border border-fintech-border rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="pt-3 flex gap-2">
+                        <button type="button" onclick="closeCrudModal()" class="w-1/3 bg-fintech-deep hover:bg-fintech-border text-white text-xs font-bold py-2.5 rounded-xl border border-fintech-border transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="w-2/3 bg-fintech-accent hover:bg-fintech-accentHover text-white text-xs font-black py-2.5 rounded-xl transition shadow-lg shadow-fintech-accent/15">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-fintech-border bg-fintech-deep/40 py-4 px-4 text-center text-[10px] text-fintech-textMuted">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>VeneRemesas Suite v3.2 - Plataforma Profesional para el Control de Cambios Seguro.</span>
+            <span>Estabilidad Garantizada. Clave de Prueba: 1234</span>
+        </div>
+    </footer>
+
+    <!-- Toast Component -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-fintech-accent text-white px-4 py-2.5 rounded-lg shadow-lg font-bold text-xs flex items-center gap-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">Notificación</span>
     </div>
 
-            <div id="printable-receipt"></div>
-    
-            <div class="calculo-precio-venta-bcv-container non-printable">
-                <h2>Calcular Precio de Venta BCV para Recompra USDT</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="costo-original-usd-recompra">Costo Original del Producto (USD)</label>
-                        <input type="number" id="costo-original-usd-recompra" placeholder="Ej: 10.00" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label for="tasa-p2p-binance-recompra">Tasa P2P Binance (Bs/USD)</label>
-                        <input type="number" id="tasa-p2p-binance-recompra" placeholder="Ej: 270.00" step="0.01">
-                    </div>
-                    <button id="btn-calcular-precio-venta-bcv" class="btn btn-primary">Calcular Precio Venta BCV</button>
-                </div>
-                            <div id="resultado-precio-venta-bcv" class="resultado-item" style="margin-top: 20px; display: none;">
-                                <h3>Precio de Venta BCV Sugerido</h3>
-                                <p id="precio-venta-bcv-sugerido"></p>
-                                <p id="precio-venta-bcv-sugerido-usd" style="font-size: 1.2rem; color: #6c757d;"></p>
-                            </div>            </div>
-    
-        <script>        document.addEventListener('DOMContentLoaded', () => {
-            // --- REFERENCIAS A ELEMENTOS DEL DOM ---
-            const tasaBcvInput = document.getElementById('tasa-bcv');
-            const tasaBinanceInput = document.getElementById('tasa-binance');
-            const tasaEuroInput = document.getElementById('tasa-euro');
-            const tasaUsdEurInput = document.getElementById('tasa-usd-eur');
+    <script>
+        // Internal Global State
+        let currentOriginCurrency = 'USD';
+        let isOperatorDashboardUnlocked = false;
+        let selectedQueueItem = null;
+        let lastSettledTx = null;
+
+        // Centralized configuration of exchange rates (editable in the dashboard)
+        let rateConfigurations = {
+            'USD': { baseP2P: 750.00, margin: 3.0, manualOverride: false, manualTasa: 727.50 },
+            'EUR': { baseP2P: 805.00, margin: 3.5, manualOverride: false, manualTasa: 776.82 },
+            'CLP': { baseP2P: 0.785, margin: 4.0, manualOverride: false, manualTasa: 0.753 },
+            'COP': { baseP2P: 0.188, margin: 4.0, manualOverride: false, manualTasa: 0.180 }
+        };
+
+        // Bank recommended daily safety limits in VES (Sudeban protection compliance)
+        const initialBankLimits = {
+            'Banesco': { maxDaily: 1500000, current: 0, txCount: 0 },
+            'Pago Móvil': { maxDaily: 800000, current: 0, txCount: 0 },
+            'Venezuela': { maxDaily: 2500000, current: 0, txCount: 0 },
+            'Mercantil': { maxDaily: 1200000, current: 0, txCount: 0 },
+            'Provincial': { maxDaily: 1200000, current: 0, txCount: 0 }
+        };
+
+        // Initial mock pending queue
+        let remittanceQueue = [
+            { id: 1041, origin: 'EUR', amount: 150, rate: 776.82, localTasa: 776.82, vesToPay: 116523.00, clientName: 'María Rodríguez', bdvId: 'V-9876543', bank: 'Banesco', bankDetails: '0414-1234567 (Pago Móvil)' },
+            { id: 1042, origin: 'USD', amount: 200, rate: 727.50, localTasa: 727.50, vesToPay: 145500.00, clientName: 'Carlos Gómez', bdvId: 'V-15632145', bank: 'Venezuela', bankDetails: '0424-9876543 (Pago Móvil)' },
+            { id: 1043, origin: 'CLP', amount: 250000, rate: 0.753, localTasa: 0.753, vesToPay: 188250.00, clientName: 'Fabiola Ruiz', bdvId: 'V-20154321', bank: 'Mercantil', bankDetails: '0105-0105-4421-2291-8822' }
+        ];
+
+        // Bank templates configured without raw unescaped triggers to prevent syntax errors
+        const paymentInstructionsTemplates = {
+            'USD': 'METODO: Zelle\nCorreo: pagos@veneremesas.com\nTitular: VeneRemesas LLC\nConcepto: Soporte de Envio',
+            'EUR': 'METODO: Bizum / SEPA\nBizum: +34 612 345 678\nIBAN: ES21 0182 1234 5678 9012\nTitular: Mesa Cambio S.L.',
+            'CLP': 'METODO: Transferencia RUT\nBanco: Banco Estado\nCuenta: 12345678\nRUT: 12.345.678-9\nTitular: Transfer Chile SpA',
+            'COP': 'METODO: Nequi / Bancolombia\nNequi Cel: 312 456 7890\nCuenta Ahorros: 504-12345-67\nTitular: Alianza Envios SAS'
+        };
+
+        // Closed historic settled transactions ledger saved locally
+        let localLedger = [];
+
+        // Application initialization
+        window.addEventListener('load', () => {
+            loadStoredState();
+            recalculateAllAutomatedRates();
+            updateCalculadoraTasa();
+
+            // Client inputs triggers
+            document.getElementById('clientAmountInput').addEventListener('input', updateCalculadoraTasa);
             
-            const productoNombreInput = document.getElementById('producto-nombre');
-            const productoCostoInput = document.getElementById('producto-costo');
-            const productoMonedaSelect = document.getElementById('producto-moneda');
+            // Authorization triggers
+            document.getElementById('btnToggleDashboard').addEventListener('click', openAuthenticationModal);
+            document.getElementById('closeAuthBtn').addEventListener('click', closeAuthenticationModal);
+            document.getElementById('btnSubmitAuth').addEventListener('click', verifyOperatorPassword);
             
-            const btnAgregar = document.getElementById('btn-agregar');
-            const tablaBody = document.getElementById('tabla-body');
-
-            const btnCalcularCotizacion = document.getElementById('btn-calcular-cotizacion');
-            const btnImprimir = document.getElementById('btn-imprimir');
-            const cotizacionResultados = document.getElementById('cotizacion-resultados');
-            const printableReceipt = document.getElementById('printable-receipt');
-
-            // --- ALMACÉN DE DATOS ---
-            let productos = [];
-
-            // --- FUNCIONES DE FORMATO ---
-            const formatBs = (value) => {
-                if (isNaN(value) || value === null) return '<span class="na">N/A</span>';
-                return `Bs. ${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            };
-
-            const formatDollar = (value) => {
-                 if (isNaN(value) || value === null) return 'N/A';
-                return `$ ${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
+            // Operator control triggers
+            document.getElementById('btnResetArbitrage').addEventListener('click', resetArbitrageForm);
+            document.getElementById('btnExecuteSettlement').addEventListener('click', executeArbitrageRemittance);
+            document.getElementById('remittanceForm').addEventListener('submit', clientSubmitForm);
             
-            const formatOriginalCost = (p) => {
-                let baseCost, convertedCost = '';
-                if (p.moneda === 'USD') {
-                    baseCost = `$ ${p.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                    if (p.costoEnEur) {
-                        convertedCost = ` / € ${p.costoEnEur.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                    }
-                } else { // EUR
-                    baseCost = `€ ${p.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                }
-                return `${baseCost}<span class="costo-original-eur">${convertedCost}</span>`;
-            };
+            document.getElementById('btnGenerateAiNotice').addEventListener('click', generateAiNoticeMessage);
+            document.getElementById('btnCopyAiNotice').addEventListener('click', copyFormattedAiNotice);
+            
+            document.getElementById('closeReceiptBtn').addEventListener('click', toggleReceiptModal);
+            document.getElementById('btnConfirmCloseReceipt').addEventListener('click', toggleReceiptModal);
 
-            // --- FUNCIONES PRINCIPALES ---
-            const agregarProducto = () => {
-                const tasaBcv = parseFloat(tasaBcvInput.value);
-                const tasaBinance = parseFloat(tasaBinanceInput.value);
-                const tasaEuro = parseFloat(tasaEuroInput.value);
-                const tasaUsdEur = parseFloat(tasaUsdEurInput.value);
-                
-                const nombre = productoNombreInput.value.trim();
-                const costo = parseFloat(productoCostoInput.value);
-                const moneda = productoMonedaSelect.value;
-
-                if (!nombre || isNaN(costo) || costo <= 0) {
-                    alert('Por favor, introduce un nombre y un costo válido para el producto.');
-                    return;
-                }
-
-                let precioBcv = null, precioBinance = null, precioEuro = null, costoEnEur = null;
-
-                if (moneda === 'USD') {
-                    if (!isNaN(tasaBcv)) precioBcv = costo * tasaBcv;
-                    if (!isNaN(tasaBinance)) precioBinance = costo * tasaBinance;
-                    if (!isNaN(tasaUsdEur)) costoEnEur = costo * tasaUsdEur;
-                    if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro; // Calcular también la tasa Euro para USD
-                } else if (moneda === 'EUR') {
-                    if (!isNaN(tasaEuro)) precioEuro = costo * tasaEuro;
-                }
-
-                const producto = {
-                    id: Date.now(),
-                    nombre, costo, moneda, costoEnEur,
-                    precioBcv, precioBinance, precioEuro
-                };
-                productos.push(producto);
-                
-                renderTabla();
-                productoNombreInput.value = '';
-                productoCostoInput.value = '';
-                productoNombreInput.focus();
-            };
-
-            const eliminarProducto = (id) => {
-                productos = productos.filter(p => p.id !== id);
-                renderTabla();
-            };
-
-            const calcularCotizacion = () => {
-                if (productos.length === 0) {
-                    alert('No hay productos en la lista para cotizar.');
-                    return;
-                }
-
-                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
-                let totalUSD = 0, totalBsBinance = 0;
-
-                productos.forEach(p => {
-                    if (p.moneda === 'USD') {
-                        totalUSD += p.costo;
-                    }
-                    if (p.precioBinance !== null && !isNaN(p.precioBinance)) {
-                        totalBsBinance += p.precioBinance;
-                    }
-                });
-
-                let resultHTML = '';
-                if (paymentMethod === 'USD') {
-                    resultHTML = `
-                        <div class="resultado-item">
-                            <h3>Total a Pagar (USD/USDT)</h3>
-                            <p>${formatDollar(totalUSD)}</p>
-                        </div>`;
-                } else { // VES
-                    resultHTML = `
-                        <div class="resultado-item">
-                            <h3>Total a Pagar (Bolívares)</h3>
-                            <p class="total-bs">${formatBs(totalBsBinance)}</p>
-                        </div>`;
-                }
-                cotizacionResultados.innerHTML = resultHTML;
-            };
-
-            const generarRecibo = () => {
-                if (productos.length === 0) {
-                    alert('No hay productos para generar un recibo.');
-                    return false;
-                }
-
-                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
-                let tableRows = '';
-                let totalHTML = '';
-                let headerHTML = '';
-
-                if (paymentMethod === 'USD') {
-                    headerHTML = 'Precio (USD)';
-                    let totalReciboUsd = 0;
-
-                    productos.forEach(p => {
-                        if (p.moneda === 'USD') {
-                            totalReciboUsd += p.costo;
-                            tableRows += `
-                                <tr>
-                                    <td>${p.nombre}</td>
-                                    <td class="text-right">${formatDollar(p.costo)}</td>
-                                </tr>
-                            `;
-                        } else {
-                            tableRows += `
-                                <tr>
-                                    <td>${p.nombre}</td>
-                                    <td class="text-right">N/A (Costo en EUR)</td>
-                                </tr>
-                            `;
-                        }
-                    });
-                    totalHTML = `<strong>${formatDollar(totalReciboUsd)}</strong>`;
-
-                } else { // VES
-                    headerHTML = 'Precio (Bs.)';
-                    let totalReciboBs = 0;
-
-                    productos.forEach(p => {
-                        const precioBsBinance = p.precioBinance;
-                        if (precioBsBinance !== null && !isNaN(precioBsBinance)) {
-                            totalReciboBs += precioBsBinance;
-                            tableRows += `
-                                <tr>
-                                    <td>${p.nombre}</td>
-                                    <td class="text-right">${formatBs(precioBsBinance)}</td>
-                                </tr>
-                            `;
-                        } else {
-                            tableRows += `
-                                <tr>
-                                    <td>${p.nombre}</td>
-                                    <td class="text-right">N/A</td>
-                                </tr>
-                            `;
-                        }
-                    });
-                    totalHTML = `<strong>${formatBs(totalReciboBs)}</strong>`;
-                }
-
-                printableReceipt.innerHTML = `
-                    <img src="imagenes/logo.png" alt="Logo" class="logo">
-                    <h1>Recibo de Cotización</h1>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th class="text-right">${headerHTML}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                            <tr class="total-row">
-                                <td><strong>Total a Pagar</strong></td>
-                                <td class="text-right">${totalHTML}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                `;
-                return true;
-            };
-
-            // --- FUNCIÓN DE RENDERIZADO ---
-            const renderTabla = () => {
-                tablaBody.innerHTML = '';
-                productos.forEach(p => {
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td data-label="Producto">${p.nombre}</td>
-                        <td data-label="Costo Original">${formatOriginalCost(p)}</td>
-                        <td data-label="Precio en Bs (Tasa BCV)">${formatBs(p.precioBcv)}</td>
-                        <td data-label="Precio en Bs (Tasa Binance)">${formatBs(p.precioBinance)}</td>
-                        <td data-label="Precio en Bs (Tasa Euro)">${formatBs(p.precioEuro)}</td>
-                        <td data-label="Acción"><button class="btn btn-danger btn-eliminar" data-id="${p.id}">Eliminar</button></td>
-                    `;
-                    tablaBody.appendChild(newRow);
-                });
-            };
-
-            // --- ASIGNAR EVENTOS ---
-            btnAgregar.addEventListener('click', agregarProducto);
-            btnCalcularCotizacion.addEventListener('click', calcularCotizacion);
-            btnImprimir.addEventListener('click', () => {
-                if (generarRecibo()) {
-                    window.print();
-                }
+            document.getElementById('closeCrudBtn').addEventListener('click', closeCrudModal);
+            
+            // Allow press enter to submit password
+            document.getElementById('authPassInput').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') verifyOperatorPassword();
             });
 
-            tablaBody.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-eliminar')) {
-                    const id = parseInt(e.target.getAttribute('data-id'));
-                    eliminarProducto(id);
-                }
-            });
-            
-            productoCostoInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    agregarProducto();
-                }
-            });
-
-            // --- REFERENCIAS A ELEMENTOS DEL DOM PARA NUEVA FUNCIÓN ---
-            const costoOriginalUsdRecompraInput = document.getElementById('costo-original-usd-recompra');
-            const tasaP2pBinanceRecompraInput = document.getElementById('tasa-p2p-binance-recompra');
-            const btnCalcularPrecioVentaBcv = document.getElementById('btn-calcular-precio-venta-bcv');
-            const resultadoPrecioVentaBcvDiv = document.getElementById('resultado-precio-venta-bcv');
-            const precioVentaBcvSugeridoP = document.getElementById('precio-venta-bcv-sugerido');
-            const precioVentaBcvSugeridoUsdP = document.getElementById('precio-venta-bcv-sugerido-usd');
-
-            // --- NUEVA FUNCIÓN ---
-            const calcularPrecioVentaBcvParaRecompra = () => {
-                const costoOriginalUsd = parseFloat(costoOriginalUsdRecompraInput.value);
-                const tasaP2pBinance = parseFloat(tasaP2pBinanceRecompraInput.value);
-                const tasaBcv = parseFloat(tasaBcvInput.value); // Obtener la tasa BCV del input existente
-
-                if (isNaN(costoOriginalUsd) || costoOriginalUsd <= 0 ||
-                    isNaN(tasaP2pBinance) || tasaP2pBinance <= 0 ||
-                    isNaN(tasaBcv) || tasaBcv <= 0) {
-                    alert('Por favor, introduce valores válidos para el costo original, la tasa P2P Binance y la tasa BCV.');
-                    resultadoPrecioVentaBcvDiv.style.display = 'none';
-                    return;
-                }
-
-                const precioVentaBcvSugerido = costoOriginalUsd * tasaP2pBinance;
-                const usdEquivalente = precioVentaBcvSugerido / tasaBcv; // Calcular el equivalente en USD
-
-                precioVentaBcvSugeridoP.textContent = formatBs(precioVentaBcvSugerido);
-                precioVentaBcvSugeridoUsdP.textContent = `(${formatDollar(usdEquivalente)} al BCV)`;
-                resultadoPrecioVentaBcvDiv.style.display = 'block';
-            };
-
-            // --- ASIGNAR EVENTOS PARA NUEVA FUNCIÓN ---
-            btnCalcularPrecioVentaBcv.addEventListener('click', calcularPrecioVentaBcvParaRecompra);
+            // Start clock
+            setInterval(updateTimeBadge, 1000);
+            updateTimeBadge();
         });
-    </script>
 
+        // Load storage state safely
+        function loadStoredState() {
+            if (localStorage.getItem('veneremesas_ledger_state')) {
+                try {
+                    localLedger = JSON.parse(localStorage.getItem('veneremesas_ledger_state'));
+                } catch (e) {
+                    console.error("No se pudo cargar el ledger", e);
+                }
+            }
+        }
+
+        // Save storage state safely
+        function saveState() {
+            localStorage.setItem('veneremesas_ledger_state', JSON.stringify(localLedger));
+        }
+
+        function updateTimeBadge() {
+            const now = new Date();
+            document.getElementById('sysTimeBadge').innerText = "Mesa Activa • " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second: '2-digit'});
+        }
+
+        // Tasa dynamic state calculator
+        function recalculateAllAutomatedRates() {
+            Object.keys(rateConfigurations).forEach(curr => {
+                const conf = rateConfigurations[curr];
+                if (!conf.manualOverride) {
+                    const finalTasaValue = conf.baseP2P * (1 - (conf.margin / 100));
+                    conf.manualTasa = parseFloat(finalTasaValue.toFixed(curr === 'CLP' || curr === 'COP' ? 3 : 2));
+                }
+                // Write back rates values to input boxes inside the administrative settings panel
+                document.getElementById(`inputTasaBinance_${curr}`).value = conf.baseP2P;
+                document.getElementById(`inputMargen_${curr}`).value = conf.margin;
+                
+                const finalField = document.getElementById(`inputFinalTasa_${curr}`);
+                finalField.value = conf.manualTasa;
+                finalField.disabled = !conf.manualOverride;
+                
+                if (conf.manualOverride) {
+                    finalField.classList.remove('bg-fintech-card/50');
+                    finalField.classList.add('bg-fintech-deep');
+                } else {
+                    finalField.classList.remove('bg-fintech-deep');
+                    finalField.classList.add('bg-fintech-card/50');
+                }
+            });
+        }
+
+        // Called when user modifies the base rate or margin
+        function recalculateManualOrAutoTasa(curr) {
+            const baseVal = parseFloat(document.getElementById(`inputTasaBinance_${curr}`).value) || 0;
+            const marginVal = parseFloat(document.getElementById(`inputMargen_${curr}`).value) || 0;
+            
+            rateConfigurations[curr].baseP2P = baseVal;
+            rateConfigurations[curr].margin = marginVal;
+            
+            recalculateAllAutomatedRates();
+            updateCalculadoraTasa();
+        }
+
+        // Manually lock/unlock rates calculated output to override it
+        function toggleTasaOverride(curr) {
+            const conf = rateConfigurations[curr];
+            conf.manualOverride = !conf.manualOverride;
+            
+            const btn = document.getElementById(`btnOverrideLock_${curr}`);
+            const marginBox = document.getElementById(`boxMargen_${curr}`);
+
+            if (conf.manualOverride) {
+                btn.innerHTML = `<i class="fa-solid fa-lock-open text-fintech-accent"></i> Fijo (Manual)`;
+                marginBox.style.opacity = '0.3';
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-lock text-fintech-gold"></i> Auto (Margen)`;
+                marginBox.style.opacity = '1';
+            }
+
+            recalculateAllAutomatedRates();
+            updateCalculadoraTasa();
+            showToast(`Edición manual para ${curr} modificada.`);
+        }
+
+        function handleManualTasaInput(curr) {
+            const val = parseFloat(document.getElementById(`inputFinalTasa_${curr}`).value) || 0;
+            rateConfigurations[curr].manualTasa = val;
+            updateCalculadoraTasa();
+        }
+
+        // Currency Selector triggers
+        function selectOriginCurrency(curr) {
+            currentOriginCurrency = curr;
+            
+            // Clear styles
+            ['USD', 'EUR', 'CLP', 'COP'].forEach(c => {
+                const el = document.getElementById(`btnCurrency_${c}`);
+                el.className = "py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-deep border-fintech-border text-fintech-textMuted hover:border-fintech-border/80";
+            });
+
+            // Set active styles
+            const activeEl = document.getElementById(`btnCurrency_${curr}`);
+            activeEl.className = "py-2.5 rounded-xl border font-extrabold text-xs flex flex-col items-center justify-center gap-1 transition bg-fintech-accent/10 border-fintech-accent text-white shadow-md";
+            
+            document.getElementById('clientCurrencyLabel').innerText = curr;
+            
+            updateCalculadoraTasa();
+        }
+
+        function updateCalculadoraTasa() {
+            const amount = parseFloat(document.getElementById('clientAmountInput').value) || 0;
+            const config = rateConfigurations[currentOriginCurrency];
+            
+            const rate = config.manualTasa;
+            const totalVES = amount * rate;
+            
+            document.getElementById('clientRateDisplay').innerText = `${rate.toLocaleString(undefined, {minimumFractionDigits: rate < 1 ? 3 : 2})} VES / ${currentOriginCurrency}`;
+            document.getElementById('clientTotalDisplay').innerText = `${totalVES.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+        }
+
+        // Submitting client form to Operator queue list
+        function clientSubmitForm(e) {
+            e.preventDefault();
+            
+            const amount = parseFloat(document.getElementById('clientAmountInput').value) || 0;
+            const name = document.getElementById('clientBeneName').value;
+            const beneId = document.getElementById('clientBeneId').value;
+            const bank = document.getElementById('clientBeneBank').value;
+            const details = document.getElementById('clientBeneDetails').value;
+            const sender = document.getElementById('clientSenderName').value;
+
+            if (amount <= 0 || !name || !beneId || !details) {
+                showToast("Por favor completa los campos del formulario.", "warning");
+                return;
+            }
+
+            const activeConfig = rateConfigurations[currentOriginCurrency];
+            const rateApplied = activeConfig.manualTasa;
+            const vesTotalValue = amount * rateApplied;
+
+            const newOrder = {
+                id: Math.floor(1000 + Math.random() * 9000),
+                origin: currentOriginCurrency,
+                amount: amount,
+                rate: rateApplied,
+                localTasa: rateApplied,
+                vesToPay: vesTotalValue,
+                clientName: name,
+                bdvId: beneId,
+                bank: bank,
+                bankDetails: details,
+                senderName: sender
+            };
+
+            remittanceQueue.push(newOrder);
+
+            // Reset Client Form
+            document.getElementById('remittanceForm').reset();
+            updateCalculadoraTasa();
+
+            // Notify Client & Display virtual instructions coupon
+            showClientModalReceipt(newOrder);
+            
+            // Reload Operator View silently
+            renderQueue();
+            showToast("¡Solicitud registrada con éxito!");
+        }
+
+        function showClientModalReceipt(order) {
+            lastSettledTx = {
+                id: order.id,
+                origin: order.origin,
+                amount: order.amount,
+                tasa: order.localTasa,
+                vesPaid: order.vesToPay,
+                beneficiary: order.clientName,
+                bank: order.bank,
+                bankDetails: order.bankDetails
+            };
+            openReceiptTicket(lastSettledTx, true); // Send true flag representing Client-facing flow
+        }
+
+        // Operator Dashboard: Render Queue lists
+        function renderQueue() {
+            const container = document.getElementById('queueListContainer');
+            container.innerHTML = '';
+            
+            const search = document.getElementById('opSearchQueue').value.toLowerCase();
+            const filteredQueue = remittanceQueue.filter(item => 
+                item.clientName.toLowerCase().includes(search) || 
+                item.bank.toLowerCase().includes(search) ||
+                item.id.toString().includes(search)
+            );
+
+            document.getElementById('operatorQueueCount').innerText = remittanceQueue.length;
+
+            if (filteredQueue.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fa-solid fa-square-check text-xl mb-1.5 block"></i>
+                        <span>No hay transacciones pendientes</span>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredQueue.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border transition-all cursor-pointer relative group ${selectedQueueItem && selectedQueueItem.id === item.id ? 'bg-fintech-accent/10 border-fintech-accent' : 'bg-fintech-deep border-fintech-border hover:border-fintech-border/85'}`;
+                
+                // Allow card selection on body, but button actions should stop propagation
+                div.onclick = () => selectQueueItemForProcessing(item);
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-start pr-12">
+                        <div>
+                            <span class="text-[10px] font-bold text-fintech-accent">#REM-${item.id}</span>
+                            <h4 class="font-bold text-white leading-tight mt-0.5">${item.clientName}</h4>
+                        </div>
+                        <span class="bg-fintech-card border border-fintech-border px-1.5 py-0.5 rounded text-[10px] text-white font-extrabold uppercase">${item.amount} ${item.origin}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2.5 pt-2 border-t border-fintech-border/50 text-[10px] text-fintech-textMuted">
+                        <span>Pagar: <strong class="text-white font-bold">${item.vesToPay.toLocaleString(undefined, {minimumFractionDigits: 2})} VES</strong></span>
+                        <span class="font-semibold text-white bg-fintech-border/60 px-1 rounded">${item.bank}</span>
+                    </div>
+                    
+                    <!-- CRUD Controls overlay on hover -->
+                    <div class="absolute right-3 top-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-fintech-deep/90 py-1 px-1.5 rounded-lg border border-fintech-border">
+                        <button onclick="event.stopPropagation(); openCrudModal('edit_pending', ${item.id})" class="text-fintech-gold hover:text-white text-xs p-1" title="Editar Solicitud">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); rejectPendingRequest(${item.id})" class="text-red-500 hover:text-white text-xs p-1" title="Rechazar/Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Delete pending requests directly (Reject)
+        function rejectPendingRequest(id) {
+            if (confirm(`¿Estás seguro de que deseas rechazar/eliminar la solicitud de remesa #${id}?`)) {
+                remittanceQueue = remittanceQueue.filter(q => q.id !== id);
+                if (selectedQueueItem && selectedQueueItem.id === id) {
+                    resetArbitrageForm();
+                } else {
+                    renderQueue();
+                }
+                showToast("Solicitud rechazada con éxito.", "warning");
+            }
+        }
+
+        // Operator Workspace: Select target pending remittance to process
+        function selectQueueItemForProcessing(item) {
+            selectedQueueItem = item;
+            
+            // Display Green Card with copy-friendly tools
+            document.getElementById('opBeneficiaryDetailsCard').classList.remove('hidden');
+            document.getElementById('opBeneName').innerText = item.clientName;
+            document.getElementById('opBeneId').innerText = item.bdvId;
+            document.getElementById('opBeneBank').innerText = item.bank;
+            document.getElementById('opBeneDetails').innerText = item.bankDetails;
+
+            // Remove disabled shield
+            document.getElementById('opNoSelectionOverlay').classList.add('hidden');
+
+            // Prefill math calculators with correct rates from configurations
+            const currentTasaP2P = rateConfigurations[item.origin].baseP2P;
+            document.getElementById('opArbitrageTasaInput').value = currentTasaP2P;
+
+            calculateArbitrage();
+            renderQueue(); // Refresh selection style borders
+        }
+
+        // Arbitrage execution calculations
+        function calculateArbitrage() {
+            if (!selectedQueueItem) return;
+
+            const item = selectedQueueItem;
+            const comisionRate = parseFloat(document.getElementById('opComisionVes').value);
+            const arbitrageTasa = parseFloat(document.getElementById('opArbitrageTasaInput').value) || 0.01;
+
+            const vesToPayValue = item.vesToPay;
+            const totalComisionInVes = vesToPayValue * comisionRate;
+
+            // Calculate exact net revenue on local arbitrage
+            // We got 'amount' in foreign currency.
+            // Under normal flow we bought 'amount' in local currency which translates to crypto.
+            // Standard gain formula: (VES of Arbitrage - Client VES) - commissions
+            const theoreticalTotalArbitragedVes = item.amount * arbitrageTasa;
+            const rawGananciaVes = theoreticalTotalArbitragedVes - vesToPayValue;
+            const netGananciaVes = rawGananciaVes - totalComisionInVes;
+
+            // Populate calculations displays
+            document.getElementById('opVesToPayDisplay').innerText = `${vesToPayValue.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+            document.getElementById('opComisionVesDisplay').innerText = `${totalComisionInVes.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+            
+            const netProfitBox = document.getElementById('opGananciaNeta');
+            netProfitBox.innerText = `${netGananciaVes >= 0 ? '+' : ''}${netGananciaVes.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+            netProfitBox.dataset.value = netGananciaVes;
+
+            if (netGananciaVes >= 0) {
+                netProfitBox.className = "text-fintech-accent font-black";
+            } else {
+                netProfitBox.className = "text-red-500 font-black";
+            }
+        }
+
+        // Complete local transaction and deduct from daily limit tracking
+        function executeArbitrageRemittance() {
+            if (!selectedQueueItem) {
+                showToast("Por favor selecciona una remesa de la lista", "warning");
+                return;
+            }
+
+            const item = selectedQueueItem;
+            const bank = item.bank;
+
+            // Check Sudeban limits safety
+            if (initialBankLimits[bank]) {
+                const totalInvolvedInVes = item.vesToPay;
+                if (initialBankLimits[bank].current + totalInvolvedInVes > initialBankLimits[bank].maxDaily) {
+                    showToast(`¡Alerta! Excederás el límite diario recomendado para ${bank}.`, "warning");
+                }
+                initialBankLimits[bank].current += totalInvolvedInVes;
+                initialBankLimits[bank].txCount += 1;
+            }
+
+            const netGananciaVes = parseFloat(document.getElementById('opGananciaNeta').dataset.value) || 0;
+
+            const settledTx = {
+                id: item.id,
+                origin: item.origin,
+                amount: item.amount,
+                vesPaid: item.vesToPay,
+                gain: netGananciaVes,
+                beneficiary: item.clientName,
+                bank: item.bank,
+                bankDetails: item.bankDetails,
+                tasa: item.localTasa
+            };
+
+            localLedger.unshift(settledTx);
+            remittanceQueue = remittanceQueue.filter(q => q.id !== item.id);
+
+            saveState();
+
+            // UI Refreshers
+            renderQueue();
+            renderLimits();
+            renderLedger();
+
+            // Open digital receipt for operator review
+            openReceiptTicket(settledTx, false); // Send false flag since this is Operator-facing
+            resetArbitrageForm();
+        }
+
+        function resetArbitrageForm() {
+            selectedQueueItem = null;
+            document.getElementById('opBeneficiaryDetailsCard').classList.add('hidden');
+            document.getElementById('opNoSelectionOverlay').classList.remove('hidden');
+            renderQueue();
+        }
+
+        // Safely copying selected field data to Clipboard without deprecations
+        function copySingleField(id) {
+            const textToCopy = document.getElementById(id).innerText;
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = textToCopy;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            showToast("Copiado al portapapeles ✔");
+        }
+
+        function copyUnifiedFicha() {
+            const name = document.getElementById('opBeneName').innerText;
+            const id = document.getElementById('opBeneId').innerText;
+            const bank = document.getElementById('opBeneBank').innerText;
+            const details = document.getElementById('opBeneDetails').innerText;
+
+            const consolidated = `BENEFICIARIO: ${name}\nCEDULA: ${id}\nBANCO: ${bank}\nPAGO: ${details}`;
+
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = consolidated;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            
+            showToast("¡Ficha unificada copiada!");
+        }
+
+        function renderLimits() {
+            const container = document.getElementById('limitsBarsContainer');
+            container.innerHTML = '';
+
+            // Recalculate based on current ledger
+            Object.keys(initialBankLimits).forEach(k => {
+                initialBankLimits[k].current = 0;
+                initialBankLimits[k].txCount = 0;
+            });
+
+            localLedger.forEach(tx => {
+                const b = tx.bank;
+                if (initialBankLimits[b]) {
+                    initialBankLimits[b].current += tx.vesPaid;
+                    initialBankLimits[b].txCount += 1;
+                }
+            });
+
+            Object.keys(initialBankLimits).forEach(key => {
+                const bank = initialBankLimits[key];
+                const pct = Math.min((bank.current / bank.maxDaily) * 100, 100);
+
+                let progressColor = 'bg-fintech-accent';
+                if (pct >= 85) progressColor = 'bg-red-500 animate-pulse';
+                else if (pct >= 60) progressColor = 'bg-yellow-500';
+
+                const card = document.createElement('div');
+                card.className = "space-y-1 text-xs";
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white">${key}</span>
+                        <span class="text-fintech-textMuted font-mono text-[10px]">${bank.current.toLocaleString(undefined, {maximumFractionDigits: 0})} / ${bank.maxDaily.toLocaleString()} VES (${pct.toFixed(0)}%)</span>
+                    </div>
+                    <div class="w-full bg-fintech-deep rounded-full h-1.5 overflow-hidden border border-fintech-border/80">
+                        <div class="h-full ${progressColor} transition-all duration-300" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderLedger() {
+            const container = document.getElementById('ledgerTableBody');
+            const placeholder = document.getElementById('noLedgerPlaceholder');
+            container.innerHTML = '';
+
+            if (localLedger.length === 0) {
+                placeholder.classList.remove('hidden');
+                document.getElementById('ledgerProfitTotal').innerText = "0.00 VES";
+                return;
+            } else {
+                placeholder.classList.add('hidden');
+            }
+
+            let totalProfitAccumulated = 0;
+
+            localLedger.forEach((tx, idx) => {
+                totalProfitAccumulated += tx.gain;
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-fintech-border/30 hover:bg-fintech-deep/40 text-xs";
+                tr.innerHTML = `
+                    <td class="py-2 text-[10px] text-fintech-textMuted font-bold">#REM-${tx.id}</td>
+                    <td class="py-2"><span class="bg-fintech-deep border border-fintech-border px-1.5 py-0.5 rounded text-[9px] text-white font-semibold">${tx.bank}</span></td>
+                    <td class="py-2 text-right font-mono text-white">${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} ${tx.origin}</td>
+                    <td class="py-2 text-right font-mono text-white">${tx.vesPaid.toLocaleString(undefined, {minimumFractionDigits: 2})} Bs</td>
+                    <td class="py-2 text-right font-mono text-fintech-accent font-bold">+${tx.gain.toLocaleString(undefined, {minimumFractionDigits: 2})} Bs</td>
+                    <td class="py-2 text-center flex justify-center items-center gap-1">
+                        <button onclick="openCrudModal('edit_ledger', ${tx.id})" class="text-fintech-gold hover:text-white transition" title="Editar Registro">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteHistoricalRecord(${idx})" class="text-gray-500 hover:text-red-500 transition" title="Eliminar Registro">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+
+            document.getElementById('ledgerProfitTotal').innerText = `${totalProfitAccumulated.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+        }
+
+        function deleteHistoricalRecord(idx) {
+            if (confirm("¿Estás seguro de eliminar este registro del historial?")) {
+                localLedger.splice(idx, 1);
+                saveState();
+                
+                renderLimits();
+                renderLedger();
+                showToast("Registro eliminado con éxito.");
+            }
+        }
+
+        // Open CRUD Modal for creating pending, editing pending, or editing history
+        function openCrudModal(mode, id = null) {
+            const modal = document.getElementById('crudModal');
+            const form = document.getElementById('crudForm');
+            form.reset();
+
+            document.getElementById('crudTargetMode').value = mode;
+            document.getElementById('crudTargetId').value = id || '';
+
+            const title = document.getElementById('crudModalTitle');
+            const subtitle = document.getElementById('crudModalSubtitle');
+            const icon = document.getElementById('crudModalIcon');
+            const gainContainer = document.getElementById('crudGainContainer');
+
+            gainContainer.classList.add('hidden');
+
+            if (mode === 'create_pending') {
+                title.innerText = "Registrar Solicitud Manual";
+                subtitle.innerText = "Crea un pedido directamente en la cola operativa.";
+                icon.className = "fa-solid fa-plus text-fintech-accent";
+                
+                // Pre-fill with defaults based on current active configs
+                document.getElementById('crudOrigin').value = 'USD';
+                document.getElementById('crudAmount').value = 100;
+                document.getElementById('crudRate').value = rateConfigurations['USD'].manualTasa;
+                recalcCrudModalTotal();
+                
+            } else if (mode === 'edit_pending') {
+                title.innerText = "Editar Solicitud Pendiente";
+                subtitle.innerText = "Modifica los datos bancarios o montos de este pedido.";
+                icon.className = "fa-solid fa-pen-to-square text-fintech-gold";
+
+                const item = remittanceQueue.find(q => q.id === id);
+                if (item) {
+                    document.getElementById('crudOrigin').value = item.origin;
+                    document.getElementById('crudAmount').value = item.amount;
+                    document.getElementById('crudRate').value = item.rate;
+                    document.getElementById('crudBeneName').value = item.clientName;
+                    document.getElementById('crudBeneId').value = item.bdvId;
+                    document.getElementById('crudBeneBank').value = item.bank;
+                    document.getElementById('crudBeneDetails').value = item.bankDetails;
+                    document.getElementById('crudSenderName').value = item.senderName || '';
+                    recalcCrudModalTotal();
+                }
+            } else if (mode === 'edit_ledger') {
+                title.innerText = "Editar Transacción Liquidada";
+                subtitle.innerText = "Modifica un registro ya archivado en el libro diario.";
+                icon.className = "fa-solid fa-file-invoice-dollar text-fintech-accent";
+                gainContainer.classList.remove('hidden');
+
+                const tx = localLedger.find(t => t.id === id);
+                if (tx) {
+                    document.getElementById('crudOrigin').value = tx.origin;
+                    document.getElementById('crudAmount').value = tx.amount;
+                    document.getElementById('crudRate').value = tx.tasa;
+                    document.getElementById('crudBeneName').value = tx.beneficiary;
+                    document.getElementById('crudBeneId').value = tx.bdvId || '';
+                    document.getElementById('crudBeneBank').value = tx.bank;
+                    document.getElementById('crudBeneDetails').value = tx.bankDetails;
+                    document.getElementById('crudSenderName').value = tx.senderName || '';
+                    document.getElementById('crudGain').value = tx.gain;
+                    recalcCrudModalTotal();
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeCrudModal() {
+            document.getElementById('crudModal').classList.add('hidden');
+        }
+
+        // Automatically update the calculated Bolívares field in the modal
+        function recalcCrudModalTotal() {
+            const amount = parseFloat(document.getElementById('crudAmount').value) || 0;
+            const rate = parseFloat(document.getElementById('crudRate').value) || 0;
+            document.getElementById('crudTotalVes').value = (amount * rate).toFixed(2);
+        }
+
+        // Save CRUD Form (Create or Edit)
+        function saveCrudForm(e) {
+            e.preventDefault();
+
+            const mode = document.getElementById('crudTargetMode').value;
+            const id = parseInt(document.getElementById('crudTargetId').value);
+
+            const origin = document.getElementById('crudOrigin').value;
+            const amount = parseFloat(document.getElementById('crudAmount').value) || 0;
+            const rate = parseFloat(document.getElementById('crudRate').value) || 0;
+            const totalVes = parseFloat(document.getElementById('crudTotalVes').value) || 0;
+            const name = document.getElementById('crudBeneName').value;
+            const beneId = document.getElementById('crudBeneId').value;
+            const bank = document.getElementById('crudBeneBank').value;
+            const details = document.getElementById('crudBeneDetails').value;
+            const sender = document.getElementById('crudSenderName').value;
+
+            if (mode === 'create_pending') {
+                const newOrder = {
+                    id: Math.floor(1000 + Math.random() * 9000),
+                    origin: origin,
+                    amount: amount,
+                    rate: rate,
+                    localTasa: rate,
+                    vesToPay: totalVes,
+                    clientName: name,
+                    bdvId: beneId,
+                    bank: bank,
+                    bankDetails: details,
+                    senderName: sender
+                };
+                remittanceQueue.push(newOrder);
+                showToast("Solicitud manual creada.");
+
+            } else if (mode === 'edit_pending') {
+                const idx = remittanceQueue.findIndex(q => q.id === id);
+                if (idx !== -1) {
+                    remittanceQueue[idx] = {
+                        ...remittanceQueue[idx],
+                        origin: origin,
+                        amount: amount,
+                        rate: rate,
+                        localTasa: rate,
+                        vesToPay: totalVes,
+                        clientName: name,
+                        bdvId: beneId,
+                        bank: bank,
+                        bankDetails: details,
+                        senderName: sender
+                    };
+
+                    // Update workspace active card selection if it was this item
+                    if (selectedQueueItem && selectedQueueItem.id === id) {
+                        selectQueueItemForProcessing(remittanceQueue[idx]);
+                    }
+                    showToast("Solicitud modificada con éxito.");
+                }
+
+            } else if (mode === 'edit_ledger') {
+                const idx = localLedger.findIndex(t => t.id === id);
+                if (idx !== -1) {
+                    const gainVal = parseFloat(document.getElementById('crudGain').value) || 0;
+                    localLedger[idx] = {
+                        ...localLedger[idx],
+                        origin: origin,
+                        amount: amount,
+                        tasa: rate,
+                        vesPaid: totalVes,
+                        beneficiary: name,
+                        bdvId: beneId,
+                        bank: bank,
+                        bankDetails: details,
+                        senderName: sender,
+                        gain: gainVal
+                    };
+                    saveState();
+                    showToast("Historial actualizado.");
+                }
+            }
+
+            closeCrudModal();
+            renderQueue();
+            renderLimits();
+            renderLedger();
+        }
+
+        // Receipt Modal rendering triggers
+        function openReceiptTicket(tx, isClientFlow = false) {
+            lastSettledTx = tx;
+
+            document.getElementById('recId').innerText = `#REM-${tx.id}`;
+            document.getElementById('recOrig').innerText = tx.origin;
+            document.getElementById('recRec').innerText = `${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} ${tx.origin}`;
+            document.getElementById('recRate').innerText = `${tx.tasa.toLocaleString(undefined, {minimumFractionDigits: tx.tasa < 1 ? 3 : 2})} Bs / ${tx.origin}`;
+            document.getElementById('recVes').innerText = `${tx.vesPaid.toLocaleString(undefined, {minimumFractionDigits: 2})} VES`;
+            document.getElementById('recBene').innerText = tx.beneficiary;
+            document.getElementById('recBank').innerText = tx.bank;
+            document.getElementById('recDetails').innerText = tx.bankDetails;
+
+            const instBox = document.getElementById('clientPaymentInstructions');
+            const detailsBox = document.getElementById('instructionsDetailsBox');
+            const modalTitle = document.getElementById('receiptModalTitle');
+            const modalSubtitle = document.getElementById('receiptModalSubtitle');
+            const statusIcon = document.getElementById('receiptStatusIcon');
+            const actionGrid = document.getElementById('receiptActionGrid');
+            const aiNoticeContainer = document.getElementById('aiNoticeContainer');
+
+            document.getElementById('aiNoticeLoader').classList.add('hidden');
+            document.getElementById('aiNoticeOutputBox').classList.add('hidden');
+            document.getElementById('aiNoticeTextarea').value = '';
+
+            // Handle client flow specifically showing Payment instructions
+            if (isClientFlow) {
+                instBox.classList.remove('hidden');
+                aiNoticeContainer.classList.add('hidden'); // Hide operator's internal AI tools
+                
+                // Fetch localized billing template depending on selected origin country
+                const template = paymentInstructionsTemplates[tx.origin] || `Por favor, contáctanos para indicarte el método de pago local para: ${tx.origin}`;
+                detailsBox.innerText = template;
+
+                modalTitle.innerText = "Instrucciones de Pago";
+                modalSubtitle.innerText = "Completa tu depósito para procesar";
+                statusIcon.innerHTML = `<i class="fa-solid fa-clock text-yellow-500 animate-pulse"></i>`;
+                statusIcon.className = "w-12 h-12 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto text-xl";
+
+                // Generate WhatsApp Button for instant transfer confirmation
+                const waMessage = encodeURIComponent(`Hola VeneRemesas. He registrado la solicitud de remesa #${tx.id} por un monto de ${tx.amount} ${tx.origin} para transferir en Venezuela. Deseo adjuntar mi comprobante.`);
+                actionGrid.innerHTML = `
+                    <a href="https://wa.me/584120000000?text=${waMessage}" target="_blank" class="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold py-2.5 rounded-lg transition text-center flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/15">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Enviar Capture por WhatsApp
+                    </a>
+                `;
+            } else {
+                // Default Operator receipt view
+                instBox.classList.add('hidden');
+                aiNoticeContainer.classList.remove('hidden');
+                
+                modalTitle.innerText = "Transacción Completada";
+                modalSubtitle.innerText = "Recibo Oficial de Operación";
+                statusIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+                statusIcon.className = "w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl";
+
+                actionGrid.innerHTML = `
+                    <button id="btnCopyTicket" onclick="copyReceiptToClipboard()" class="bg-fintech-deep hover:bg-fintech-border border border-fintech-border text-white text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-copy"></i> Recibo Plano
+                    </button>
+                    <button id="btnConfirmCloseReceipt" onclick="toggleReceiptModal()" class="bg-fintech-accent hover:bg-fintech-accentHover text-white text-[11px] font-bold py-2 rounded-lg transition text-center">
+                        Listo
+                    </button>
+                `;
+            }
+
+            toggleReceiptModal();
+        }
+
+        function toggleReceiptModal() {
+            const modal = document.getElementById('receiptModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copyReceiptToClipboard() {
+            if (!lastSettledTx) return;
+            const rawText = `RECIBO OFICIAL DE REMESA #${lastSettledTx.id}\nMonto Enviado: ${lastSettledTx.amount} ${lastSettledTx.origin}\nTasa: ${lastSettledTx.tasa} VES\nMonto Transferido: ${lastSettledTx.vesPaid.toFixed(2)} VES\nBeneficiario: ${lastSettledTx.beneficiary}\nBanco: ${lastSettledTx.bank}\nDetalles: ${lastSettledTx.bankDetails}`;
+            
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = rawText;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            
+            showToast("Recibo en texto plano copiado ✔");
+        }
+
+        // Simulated AI Prompt Writer for WhatsApp Notification
+        function generateAiNoticeMessage() {
+            if (!lastSettledTx) return;
+
+            const loader = document.getElementById('aiNoticeLoader');
+            const outputBox = document.getElementById('aiNoticeOutputBox');
+            
+            loader.classList.remove('hidden');
+            outputBox.classList.add('hidden');
+
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                outputBox.classList.remove('hidden');
+
+                const outputText = `✨ *VeneRemesas - Confirmación de Pago* ✨\n\nEstimado cliente, te informamos que tu remesa *#REM-${lastSettledTx.id}* ha sido procesada de forma exitosa.\n\n*Detalles de Operación:*\n🔹 *Enviado:* ${lastSettledTx.amount} ${lastSettledTx.origin}\n🔹 *Recibe en Venezuela:* ${lastSettledTx.vesPaid.toLocaleString(undefined, {minimumFractionDigits: 2})} VES\n🔹 *Destinatario:* ${lastSettledTx.beneficiary}\n🔹 *Banco:* ${lastSettledTx.bank}\n\nGracias por confiar en nuestros servicios. ¡Tu comprobante ha sido emitido! 🔒🚀`;
+                document.getElementById('aiNoticeTextarea').value = outputText;
+            }, 850);
+        }
+
+        function copyFormattedAiNotice() {
+            const txt = document.getElementById('aiNoticeTextarea').value;
+            if (!txt) return;
+
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = txt;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            showToast("Notificación formateada copiada ✔");
+        }
+
+        // Authentication Portal actions (Accessing the administrative view with password verification)
+        function openAuthenticationModal() {
+            if (isOperatorDashboardUnlocked) {
+                // If already logged in, lock back
+                isOperatorDashboardUnlocked = false;
+                document.getElementById('clientViewContainer').classList.remove('hidden');
+                document.getElementById('operatorDashboardContainer').classList.add('hidden');
+                
+                document.getElementById('btnToggleText').innerText = "Acceso Operador";
+                document.getElementById('btnToggleIcon').className = "fa-solid fa-lock text-fintech-gold";
+                showToast("Cerraste sesión del panel operador.");
+            } else {
+                document.getElementById('authOverlay').classList.remove('hidden');
+                document.getElementById('authPassInput').focus();
+            }
+        }
+
+        function closeAuthenticationModal() {
+            document.getElementById('authOverlay').classList.add('hidden');
+            document.getElementById('authPassInput').value = '';
+        }
+
+        function verifyOperatorPassword() {
+            const pass = document.getElementById('authPassInput').value;
+            if (pass === '1234') {
+                isOperatorDashboardUnlocked = true;
+                closeAuthenticationModal();
+                
+                // Show operators dashboard & hide clients portal
+                document.getElementById('clientViewContainer').classList.add('hidden');
+                document.getElementById('operatorDashboardContainer').classList.remove('hidden');
+                
+                document.getElementById('btnToggleText').innerText = "Cerrar Panel";
+                document.getElementById('btnToggleIcon').className = "fa-solid fa-unlock text-fintech-accent";
+
+                renderQueue();
+                renderLimits();
+                renderLedger();
+
+                showToast("Acceso Concedido. Bienvenido de vuelta.", "success");
+            } else {
+                showToast("Contraseña incorrecta", "error");
+            }
+        }
+
+        // Custom notification component logic
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+
+            if (type === "error") {
+                toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-red-600 text-white px-4 py-2.5 rounded-lg shadow-lg font-bold text-xs flex items-center gap-2";
+                toastIcon.className = "fa-solid fa-circle-xmark";
+            } else if (type === "warning") {
+                toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-yellow-600 text-white px-4 py-2.5 rounded-lg shadow-lg font-bold text-xs flex items-center gap-2";
+                toastIcon.className = "fa-solid fa-circle-exclamation";
+            } else {
+                toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-fintech-accent text-white px-4 py-2.5 rounded-lg shadow-lg font-bold text-xs flex items-center gap-2";
+                toastIcon.className = "fa-solid fa-circle-check";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
